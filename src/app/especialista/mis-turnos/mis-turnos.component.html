@@ -1,0 +1,18 @@
+<!-- src/app/especialista/mis-turnos/mis-turnos.component.html -->
+<h2>Mis Turnos (Especialista)</h2>
+
+<mat-form-field appearance="outline" class="full-width">
+  <mat-label>Buscar (especialidad o paciente)</mat-label>
+  <input matInput [(ngModel)]="filterTerm" (ngModelChange)="applyFilter()">
+</mat-form-field>
+
+<mat-list>
+  <mat-list-item *ngFor="let t of filtered">
+    <div mat-line>
+      <strong>{{ t.specialty }}</strong> – {{ t.patient_name }}
+    </div>
+    <div mat-line>
+      {{ t.date }} {{ t.time }} | Estado: {{ t.status }}
+    </div>
+  </mat-list-item>
+</mat-list>

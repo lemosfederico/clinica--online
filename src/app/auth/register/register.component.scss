@@ -1,0 +1,13 @@
+/* src/app/auth/register/register.component.scss */
+.register-landing {
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 400px;
+
+  .buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+}

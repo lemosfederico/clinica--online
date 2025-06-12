@@ -1,0 +1,32 @@
+/* src/app/auth/login/login.component.scss */
+.login-container {
+  max-width: 360px;
+  margin: 4rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .error {
+    color: red;
+    text-align: center;
+  }
+}
+
+.quick-access {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.to-register {
+  text-align: center;
+  margin-top: 1rem;
+}

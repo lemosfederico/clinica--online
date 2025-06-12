@@ -1,0 +1,39 @@
+/* Overlay semi-transparente */
+    .overlay-spinner {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    /* Spinner con dos anillos giratorios */
+    .fancy-spinner {
+      position: relative;
+      width: 80px; height: 80px;
+    }
+
+    .fancy-spinner div {
+      position: absolute;
+      top: 0; left: 0;
+      width: 80px; height: 80px;
+      border: 8px solid transparent;
+      border-top-color: #1b8600;
+      border-radius: 50%;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    .fancy-spinner div:nth-child(2) {
+      top: 10px; left: 10px;
+      width: 60px; height: 60px;
+      border-top-color: #ffffff;
+      animation-duration: 0.8s;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
