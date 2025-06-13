@@ -3,6 +3,7 @@ import { Component }         from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatButtonModule }   from '@angular/material/button';
 import { CommonModule }      from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   standalone: true,
@@ -10,7 +11,8 @@ import { CommonModule }      from '@angular/common';
     CommonModule,
     RouterLink,
     RouterOutlet,
-    MatButtonModule
+    MatButtonModule,
+    MatIconModule
   ],
   selector: 'app-register',
   templateUrl: './register.component.html',

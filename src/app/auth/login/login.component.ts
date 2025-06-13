@@ -7,6 +7,9 @@ import { MatFormFieldModule }         from '@angular/material/form-field';
 import { MatInputModule }             from '@angular/material/input';
 import { MatButtonModule }            from '@angular/material/button';
 import { SupabaseService }            from '../../core/supabase.service';
+import { MatIconModule }              from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Location } from '@angular/common';
 
 @Component({
   standalone: true,
@@ -16,7 +19,9 @@ import { SupabaseService }            from '../../core/supabase.service';
     RouterLink,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule
   ],
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -30,8 +35,13 @@ export class LoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private supa: SupabaseService,
-    private router: Router
+    private router: Router,
+    private location: Location
   ) {}
+
+   goBack(): void {
+    this.location.back();
+  }
 
   ngOnInit() {
     this.form = this.fb.group({

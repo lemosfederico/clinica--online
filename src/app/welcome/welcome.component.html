@@ -1,5 +1,16 @@
-<div style="text-align:center; margin-top:4rem">
-      <h2>Bienvenido a Clínica Online</h2>
-      <button mat-flat-button color="primary" routerLink="/login">Iniciar sesión</button>
-      <button mat-stroked-button color="accent" routerLink="/register">Registrarse</button>
+<div class="home-container">
+  <div class="welcome-card">
+    <h2 class="welcome-title">Bienvenido a Clínica Online</h2>
+    <p class="welcome-subtitle">Tu salud, en un click.</p>
+    <div class="actions">
+      <button mat-flat-button color="primary" routerLink="/login">
+        <mat-icon class="icon">login</mat-icon>
+        Iniciar sesión
+      </button>
+      <button mat-stroked-button color="accent" routerLink="/register">
+        <mat-icon class="icon">app_registration</mat-icon>
+        Registrarse
+      </button>
+    </div>
+  </div>
 </div>

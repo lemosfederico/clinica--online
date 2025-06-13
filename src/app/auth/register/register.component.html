@@ -1,15 +1,21 @@
-<!-- src/app/auth/register/register.component.html -->
-<div class="register-landing">
-  <h2>Registro en Clínica Online</h2>
-  <div class="buttons">
-    <button mat-flat-button color="primary" routerLink="paciente">
-      Soy Paciente
-    </button>
-    <button mat-stroked-button color="accent" routerLink="especialista">
-      Soy Especialista
-    </button>
-  </div>
+<div class="register-container">
+  <div class="register-card">
+    <mat-icon class="register-icon" color="primary">how_to_reg</mat-icon>
+    <h3 class="register-title">Registro en Clínica Online</h3>
+    <p class="register-subtitle">Seleccioná tu rol para comenzar</p>
 
-  <!-- Aquí cargan los dos formularios -->
-  <router-outlet></router-outlet>
+    <div class="buttons">
+      <button mat-flat-button color="primary" routerLink="paciente">
+        <mat-icon>person</mat-icon>
+        Soy Paciente
+      </button>
+      <button mat-stroked-button color="accent" routerLink="especialista">
+        <mat-icon>medical_services</mat-icon>
+        Soy Especialista
+      </button>
+    </div>
+
+    <!-- Carga el formulario correspondiente -->
+    <router-outlet></router-outlet>
+  </div>
 </div>

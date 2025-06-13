@@ -1,69 +1,83 @@
-<!-- src/app/auth/login/login.component.html -->
 <div class="login-container" [class.loading]="loading">
-  <h3>Iniciar Sesión</h3>
-
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
-
-    <!-- Email -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Email</mat-label>
-      <input
-        matInput
-        formControlName="email"
-        placeholder="usuario@dominio.com"
-      />
-      <mat-error *ngIf="form.get('email')?.hasError('required')">
-        El correo es obligatorio.
-      </mat-error>
-      <mat-error *ngIf="form.get('email')?.hasError('email')">
-        El formato debe ser usuario&#64;dominio.com.
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Contraseña -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
-      <input
-        matInput
-        type="password"
-        formControlName="password"
-        placeholder="••••••"
-      />
-      <mat-error *ngIf="form.get('password')?.hasError('required')">
-        La contraseña es obligatoria.
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Mensaje de error general -->
-    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
-
-    <!-- Botón de submit -->
-    <button
-      mat-flat-button
-      color="primary"
-      type="submit"
-      [disabled]="form.invalid || loading"
-    >
-      <ng-container *ngIf="!loading">Entrar</ng-container>
-      <ng-container *ngIf="loading">Ingresando…</ng-container>
+  <div class="login-card">
+      <!-- Botón Volver -->
+    <button mat-icon-button class="back-button" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
     </button>
-  </form>
+    
+    <mat-icon class="login-icon">lock</mat-icon>
+    <h3 class="login-title">Iniciar Sesión</h3>
+    <p class="login-subtitle">Accede a tu cuenta</p>
 
-  <!-- Accesos rápidos demo -->
-  <div class="quick-access">
-    <p>Acceso rápido:</p>
-    <button mat-button (click)="quickLogin('federicoezequielemos09@gmail.com','123456')">
-      Paciente
-    </button>
-    <button mat-button (click)="quickLogin('especialista@especialista.com','123456')">
-      Especialista
-    </button>
-    <button mat-button (click)="quickLogin('admin@admin.com','123456')">
-      Admin
-    </button>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <!-- Email -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input
+          matInput
+          formControlName="email"
+          placeholder="usuario@dominio.com"
+        />
+        <mat-error *ngIf="form.get('email')?.hasError('required')">
+          El correo es obligatorio.
+        </mat-error>
+        <mat-error *ngIf="form.get('email')?.hasError('email')">
+          Formato inválido: usuario&#64;dominio.com.
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Contraseña -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Contraseña</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          placeholder="••••••"
+        />
+        <mat-error *ngIf="form.get('password')?.hasError('required')">
+          La contraseña es obligatoria.
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Mensaje de error general -->
+      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+      <!-- Botón de submit -->
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || loading"
+        class="btn-submit"
+      >
+        <mat-icon *ngIf="!loading">login</mat-icon>
+        <span *ngIf="!loading">Entrar</span>
+        <mat-spinner
+          *ngIf="loading"
+          diameter="20"
+          strokeWidth="3"
+        ></mat-spinner>
+      </button>
+    </form>
+
+    <!-- Accesos rápidos demo -->
+    <div class="quick-access">
+      <p>Acceso rápido:</p>
+      <button mat-button (click)="quickLogin('federicoezequielemos09@gmail.com','123456')">
+        Paciente
+      </button>
+      <button mat-button (click)="quickLogin('especialista@especialista.com','123456')">
+        Especialista
+      </button>
+      <button mat-button (click)="quickLogin('admin@admin.com','123456')">
+        Admin
+      </button>
+    </div>
+
+    <p class="to-register">
+      ¿No tenés cuenta?
+      <a routerLink="/register">Registrate</a>
+    </p>
   </div>
-
-  <p class="to-register">
-    ¿No tenés cuenta? <a routerLink="/register">Registrate</a>
-  </p>
 </div>

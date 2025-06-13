@@ -8,6 +8,7 @@ import { MatFormFieldModule }      from '@angular/material/form-field';
 import { MatInputModule }          from '@angular/material/input';
 import { MatButtonModule }         from '@angular/material/button';
 import { CommonModule }            from '@angular/common';
+import { MatIconModule }           from '@angular/material/icon';
 
 @Component({
   selector: 'app-paciente-register',
@@ -17,7 +18,8 @@ import { CommonModule }            from '@angular/common';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatIconModule
   ],
   templateUrl: './paciente-register.component.html',
   styleUrls: ['./paciente-register.component.scss']

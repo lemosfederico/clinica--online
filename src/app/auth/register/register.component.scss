@@ -1,13 +1,59 @@
-/* src/app/auth/register/register.component.scss */
-.register-landing {
-  text-align: center;
-  margin: 2rem auto;
+@use 'src/styles' as *;              // importa TODO lo de styles.scss
+@use '@angular/material' as mat;     // importa funciones de theming
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.register-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  width: 100%;
   max-width: 400px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.16);
+  }
+
+  .register-icon {
+    font-size: 48px;
+    margin-bottom: 0.5rem;
+  }
+
+  .register-title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: mat.get-color-from-palette($clinica--online-primary, 800);
+  }
+
+  .register-subtitle {
+    margin: 0.5rem 0 1.5rem;
+    font-size: 1rem;
+    color: rgba(0,0,0,0.65);
+  }
 
   .buttons {
     display: flex;
-    gap: 1rem;
     justify-content: center;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      min-width: 140px;
+    }
   }
 }
