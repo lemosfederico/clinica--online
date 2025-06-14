@@ -3,10 +3,10 @@
 
 .login-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 2rem 1rem;
 
   &.loading {
     opacity: 0.6;
@@ -76,7 +76,7 @@
     }
   }
 
-  .quick-access {
+  /*.quick-access {
     margin-top: 1.5rem;
     p {
       margin-bottom: 0.5rem;
@@ -86,7 +86,7 @@
       margin: 0 0.3rem;
       font-size: 0.9rem;
     }
-  }
+  }*/
 
   .to-register {
     margin-top: 1.5rem;
@@ -112,3 +112,50 @@
   transition: background 0.2s, transform 0.1s;
   }
 }
+
+.quick-access {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .quick-btn {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .quick-overlay {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 0.75rem;
+      text-align: center;
+      padding: 4px 0;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+}
+
+

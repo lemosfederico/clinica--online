@@ -1,21 +1,27 @@
+<!-- src/app/auth/register/register.component.html -->
 <div class="register-container">
   <div class="register-card">
+
     <mat-icon class="register-icon" color="primary">how_to_reg</mat-icon>
     <h3 class="register-title">Registro en Clínica Online</h3>
-    <p class="register-subtitle">Seleccioná tu rol para comenzar</p>
 
-    <div class="buttons">
-      <button mat-flat-button color="primary" routerLink="paciente">
-        <mat-icon>person</mat-icon>
-        Soy Paciente
-      </button>
-      <button mat-stroked-button color="accent" routerLink="especialista">
-        <mat-icon>medical_services</mat-icon>
-        Soy Especialista
-      </button>
-    </div>
+    <!-- esto solo aparece en /register -->
+    <ng-container *ngIf="router.url === '/register'">
+      <p class="register-subtitle">Seleccioná tu rol para comenzar</p>
+      <div class="seleccion-container">
+        <button class="seleccion-btn" [routerLink]="['/register/paciente']">
+          <div class="overlay-text">Paciente</div>
+          <img src="assets/icons/paciente.jpg" alt="Paciente" />
+        </button>
+        <button class="seleccion-btn" [routerLink]="['/register/especialista']">
+          <div class="overlay-text">Especialista</div>
+          <img src="assets/icons/especialista.jpg" alt="Especialista" />
+        </button>
+      </div>
+    </ng-container>
 
-    <!-- Carga el formulario correspondiente -->
+    <!-- aquí siempre aparece el child (o nada en /register) -->
     <router-outlet></router-outlet>
+
   </div>
 </div>

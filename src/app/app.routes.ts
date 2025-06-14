@@ -25,7 +25,7 @@ export const routes: Routes =
     path: 'register',
     component: RegisterComponent,
     children: [
-      { path: '', redirectTo: 'paciente', pathMatch: 'full' },
+      //{ path: '', redirectTo: 'paciente', pathMatch: 'full' },
       { path: 'paciente',     component: PacienteRegisterComponent },
       { path: 'especialista', component: EspecialistaRegisterComponent }
     ]

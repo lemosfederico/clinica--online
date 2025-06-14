@@ -1,3 +1,11 @@
+<div class="quick-access">
+  <button *ngFor="let user of quickUsers" class="quick-btn" (click)="usarUsuario(user)">
+    <img [src]="user.img" alt="perfil" />
+    <div class="quick-overlay">{{ user.role }}</div>
+  </button>
+</div>
+
+
 <div class="login-container" [class.loading]="loading">
   <div class="login-card">
       <!-- Botón Volver -->
@@ -60,24 +68,10 @@
         ></mat-spinner>
       </button>
     </form>
-
-    <!-- Accesos rápidos demo -->
-    <div class="quick-access">
-      <p>Acceso rápido:</p>
-      <button mat-button (click)="quickLogin('federicoezequielemos09@gmail.com','123456')">
-        Paciente
-      </button>
-      <button mat-button (click)="quickLogin('especialista@especialista.com','123456')">
-        Especialista
-      </button>
-      <button mat-button (click)="quickLogin('admin@admin.com','123456')">
-        Admin
-      </button>
-    </div>
-
+    
     <p class="to-register">
       ¿No tenés cuenta?
       <a routerLink="/register">Registrate</a>
-    </p>
+    </p> 
   </div>
 </div>

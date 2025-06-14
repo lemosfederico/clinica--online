@@ -31,6 +31,8 @@ export class LoginComponent implements OnInit {
   form!: FormGroup;
   loading = false;
   errorMessage = '';
+  email: any;
+  password: any;
 
   constructor(
     private fb: FormBuilder,
@@ -38,6 +40,53 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private location: Location
   ) {}
+
+  quickUsers = [
+  {
+    email: 'test@paciente.com',
+    password: '123456',
+    role: 'paciente 1',
+    img: 'assets/perfiles/paciente1.jpg'
+  },
+  {
+    email: 'test2@paciente.com',
+    password: '123456',
+    role: 'paciente 2',
+    img: 'assets/perfiles/paciente2.jpg'
+  },
+  {
+    email: 'federicoezequielemos09@gmail.com',
+    password: '123456',
+    role: 'paciente 3',
+    img: 'assets/perfiles/paciente3.jpg'
+  },
+  {
+    email: 'sopiye2457@jio1.com',
+    password: '123456',
+    role: 'especialista 1',
+    img: 'assets/perfiles/especialista1.jpg'
+  },
+  {
+    email: 'test@especialista.com',
+    password: '123456',
+    role: 'especialista 2',
+    img: 'assets/perfiles/especialista2.png'
+  },
+  {
+    email: 'admin@admin.com',
+    password: '123456',
+    role: 'admin',
+    img: 'assets/perfiles/admin.jpg'
+  }
+  ];
+
+  usarUsuario(usr: any) {
+    this.form.patchValue({
+      email: usr.email,
+      password: usr.password
+    });
+}
+
 
    goBack(): void {
     this.location.back();
@@ -112,8 +161,10 @@ export class LoginComponent implements OnInit {
   }
 
   // Accesos rápidos
-  quickLogin(email: string, pass: string) {
+  /*quickLogin(email: string, pass: string) {
     this.form.setValue({ email, password: pass });
     this.onSubmit();
-  }
+  }*/
+
+  
 }
