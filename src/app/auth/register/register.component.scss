@@ -7,6 +7,25 @@
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
+
+  .back-button {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+    }
+
+    mat-icon {
+      color: mat.get-color-from-palette($clinica--online-primary, 800);
+      font-size: 24px;
+    }
+  }
 }
 
 .register-card {
@@ -86,5 +105,7 @@
       transform: scale(1.03);
     }
   }
+
+  
 }
 

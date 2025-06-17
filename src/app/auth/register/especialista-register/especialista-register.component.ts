@@ -8,8 +8,10 @@ import { MatFormFieldModule }      from '@angular/material/form-field';
 import { MatInputModule }          from '@angular/material/input';
 import { MatButtonModule }         from '@angular/material/button';
 import { MatCheckboxModule }       from '@angular/material/checkbox';
+import { environment }             from '../../../../environments/environment';
 
 import { SupabaseService }         from '../../../core/supabase.service';
+import { RecaptchaModule, RecaptchaFormsModule } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
@@ -19,13 +21,16 @@ import { SupabaseService }         from '../../../core/supabase.service';
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
-    MatButtonModule
+    MatButtonModule,
+    RecaptchaFormsModule,
+    RecaptchaModule
   ],
   selector: 'app-especialista-register',
   templateUrl: './especialista-register.component.html',
   styleUrls: ['./especialista-register.component.scss']
 })
 export class EspecialistaRegisterComponent implements OnInit {
+  siteKey = environment.recaptcha.siteKey;
   loading = false;
   error   = '';
   specialtyError = false;
@@ -41,8 +46,8 @@ export class EspecialistaRegisterComponent implements OnInit {
   form = this.fb.group({
     nombre:           ['', [Validators.required, Validators.minLength(3)]],
     apellido:         ['', [Validators.required, Validators.minLength(3)]],
-    edad:             [null, [Validators.required, Validators.min(1)]],
-    dni:              ['', [Validators.required, Validators.pattern(/^[0-9]+$/)]],
+    edad:             [null, [Validators.required, Validators.min(18), Validators.max(120)]],
+    dni:              [null, [Validators.required,Validators.pattern(/^\d+$/),Validators.minLength(7),Validators.maxLength(9)]],
     email:            ['', [Validators.required, Validators.email]],
     password:         ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword:  ['', [Validators.required]],
@@ -53,7 +58,8 @@ export class EspecialistaRegisterComponent implements OnInit {
       pediatria:    [false]
     }),
     customSpecialty:  [''],                    // opcional
-    profileImage:     [null, [Validators.required]]
+    profileImage:     [null, [Validators.required]],
+    recaptcha:       ['', Validators.required]    // ≤ nuevo
   }, {
     validators: group => {
       const p = group.get('password')!;
@@ -81,6 +87,14 @@ export class EspecialistaRegisterComponent implements OnInit {
     this.error   = '';
     this.specialtyError = false;
 
+    if (this.form.invalid) return;
+    const form = this.form.value;
+    console.log('⚙️ Payload para signup:', {
+    email: form.email,
+    password: form.password
+   });
+
+      
     // armo el array de especialidades
     const præ = this.form.value.predefinedSpecs as Record<string, boolean>;
     const selected = this.predefinedList
@@ -110,7 +124,7 @@ export class EspecialistaRegisterComponent implements OnInit {
     const userId = data.user.id;
 
     // 2. upload profileImage
-    const bucket = this.supa.getStorage().from('perfiles');
+    const bucket = this.supa.getStorage().from('avatars');
     const file   = profileImage as unknown as File;
     const ext    = file.name.split('.').pop();
     const path   = `${userId}/profile.${ext}`;

@@ -1,5 +1,21 @@
-/* src/app/admin/users/users.component.scss */
-.full-width {
-  width: 100%;
-  margin-top: 1rem;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: center;
 }
+
+ .back-button {
+    position: auto;
+    top: 5px;
+    left: 5x;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+    }
+
+  }

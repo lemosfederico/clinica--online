@@ -1,120 +1,148 @@
 // src/app/auth/register/paciente-register/paciente-register.component.ts
-import { Component, OnInit }       from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
-import { Router }                  from '@angular/router';
-import { SupabaseService }         from '../../../core/supabase.service';
-import { ReactiveFormsModule }     from '@angular/forms';
-import { MatFormFieldModule }      from '@angular/material/form-field';
-import { MatInputModule }          from '@angular/material/input';
-import { MatButtonModule }         from '@angular/material/button';
-import { CommonModule }            from '@angular/common';
-import { MatIconModule }           from '@angular/material/icon';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+
+import { SupabaseService } from '../../../core/supabase.service';
+import { ErrorService } from '../../../core/error.service';
+import { RecaptchaModule, RecaptchaFormsModule } from 'ng-recaptcha';
+import { environment } from '../../../../environments/environment';
 
 @Component({
-  selector: 'app-paciente-register',
   standalone: true,
+  selector: 'app-paciente-register',
   imports: [
     CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatSnackBarModule,
+    RecaptchaFormsModule,
+    RecaptchaModule
   ],
   templateUrl: './paciente-register.component.html',
   styleUrls: ['./paciente-register.component.scss']
 })
 export class PacienteRegisterComponent implements OnInit {
+  siteKey = environment.recaptcha.siteKey;
+  form: FormGroup;
   loading = false;
-  error   = '';
-
-  form = this.fb.group({
-    nombre:          ['', [Validators.required, Validators.minLength(3)]],
-    apellido:        ['', [Validators.required, Validators.minLength(3)]],
-    edad:            [null, [Validators.required, Validators.min(1)]],
-    dni:             ['', [Validators.required, Validators.pattern(/^[0-9]+$/)]],
-    obraSocial:      ['', [Validators.required]],
-    email:           ['', [Validators.required, Validators.email]],
-    password:        ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required]],
-    foto1:           [null, Validators.required],
-    foto2:           [null, Validators.required],
-  }, {
-    validators: group => {
-      const p = group.get('password')!;
-      const c = group.get('confirmPassword')!;
-      return p.value === c.value ? null : { mismatch: true };
-    }
-  });
+  error = '';
 
   constructor(
     private fb: FormBuilder,
     private supa: SupabaseService,
+    private errorSvc: ErrorService,
+    private snack: MatSnackBar,
     private router: Router
-  ) {}
+  ) {
+    this.form = this.fb.group({
+      nombre: ['', [Validators.required, Validators.minLength(3)]],
+      apellido: ['', [Validators.required, Validators.minLength(3)]],
+      edad: [null, [Validators.required, Validators.min(18), Validators.max(120)]],
+      dni: ['', [Validators.required, Validators.pattern(/^\d+$/), Validators.minLength(7), Validators.maxLength(9)]],
+      obraSocial: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required],
+      foto1: [null, Validators.required],
+      foto2: [null, Validators.required],
+      recaptcha:       ['', Validators.required]    // ≤ nuevo
+    }, {
+      validators: group => {
+        const p = group.get('password')!;
+        const c = group.get('confirmPassword')!;
+        return p.value === c.value ? null : { mismatch: true };
+      }
+    });
+  }
 
   ngOnInit() {}
 
-  onFileChange(evt: any, field: 'foto1' | 'foto2') {
-    const file = evt.target.files?.[0] ?? null;
+  onFileChange(event: Event, field: 'foto1' | 'foto2') {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
     this.form.get(field)!.setValue(file);
   }
 
   async onSubmit() {
-    if (this.form.invalid) return;
-    this.loading = true;
-    this.error   = '';
-
-    const {
-      nombre, apellido, edad, dni,
-      obraSocial, email, password, foto1, foto2
-    } = this.form.value;
-
-    // 1. Crear usuario en Auth
-    const { data, error } = await this.supa.signUp(email!, password!);
-    if (error || !data.user) {
-      this.error = error?.message || 'Error al registrar usuario';
-      this.loading = false;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
-    const userId = data.user.id;
+    this.loading = true;
+    this.error = '';
 
-    // 2. Subir fotos al bucket 'perfiles'
-    const bucket = this.supa.getStorage().from('perfiles');
-    const paths = await Promise.all(
-      ['foto1','foto2'].map(async (f, i) => {
-        const file = this.form.value[f as 'foto1' | 'foto2'] as unknown as File;
-        if (!file) throw new Error(`No file provided for ${f}`);
+    const {
+      nombre,
+      apellido,
+      edad,
+      dni,
+      obraSocial,
+      email,
+      password,
+      foto1,
+      foto2
+    } = this.form.value;
+
+    try {
+      // 1️⃣ Crear usuario en Auth
+      const { data: signupData, error: signUpError } = await this.supa.signUp(
+        email.trim().toLowerCase(),
+        password
+      );
+      if (signUpError || !signupData.user) {
+        throw signUpError || new Error('Error al registrar usuario');
+      }
+      const userId = signupData.user.id;
+
+      // 2️⃣ Subir fotos al bucket 'perfiles'
+      const bucket = this.supa.getStorage().from('avatars');
+      const uploadAndGetUrl = async (file: File, fieldName: string) => {
         const ext = file.name.split('.').pop();
-        const filePath = `${userId}/${f}-${Date.now()}.${ext}`;
-        await bucket.upload(filePath, file);
+        const filePath = `${userId}/${fieldName}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await bucket.upload(filePath, file);
+        if (uploadError) throw uploadError;
         const { data: { publicUrl } } = bucket.getPublicUrl(filePath);
-        return publicUrl;
-      })
-    );
+        return this.supa.getAvatarPublicUrl(filePath);
+      };
 
-    // 3. Insertar perfil en tabla profiles
-    const { data: insertData, error: err2 } = await this.supa
-      .from('profiles')
-      .insert([{
-        user_id:     userId,
-        role:        'paciente',
+      const url1 = await uploadAndGetUrl(foto1 as File, 'foto1');
+      const url2 = await uploadAndGetUrl(foto2 as File, 'foto2');
+
+      // 3️⃣ Insertar perfil en table profiles
+      const profilePayload = {
+        user_id:    userId,
+        role:       'paciente',
         nombre,
         apellido,
         edad,
         dni,
         obra_social: obraSocial,
-        image_urls:  paths
-      }]);
+        approved:   true, // Asumimos que el paciente se aprueba automáticamente
+        image_urls: [url1, url2]
+      };
 
-    if (err2) {
-      this.error = err2.message;
+      const { error: profileError } = await this.supa.from('profiles').insert(profilePayload);
+      if (profileError) throw profileError;
+
+      // 4️⃣ Redirigir
+      this.router.navigateByUrl('/login');
+
+    } catch (err: any) {
+      const msg = this.errorSvc.translate(err.error || err) || err.message;
+      this.snack.open(msg, 'Cerrar', { duration: 5000 });
+    } finally {
       this.loading = false;
-      return;
     }
-
-    // 4. Redirigir a login
-    this.loading = false;
-    this.router.navigateByUrl('/login');
   }
 }

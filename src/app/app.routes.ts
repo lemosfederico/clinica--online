@@ -1,11 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { RegisterComponent }     from './auth/register/register.component';
-import { PacienteRegisterComponent }  from './auth/register/paciente-register/paciente-register.component';
-import { EspecialistaRegisterComponent } from './auth/register/especialista-register/especialista-register.component';
-import { AdminUsersComponent } from './admin/users/users.component';
-import { MisTurnosPacienteComponent } from './paciente/mis-turnos/mis-turnos.component';
-import { MisTurnosEspecialistaComponent } from './especialista/mis-turnos/mis-turnos.component';
 import { authGuard } from './core/auth.guard';
 import { roleGuard } from './core/role.guard';
 
@@ -24,31 +19,60 @@ export const routes: Routes =
   {
     path: 'register',
     component: RegisterComponent,
-    children: [
-      //{ path: '', redirectTo: 'paciente', pathMatch: 'full' },
-      { path: 'paciente',     component: PacienteRegisterComponent },
-      { path: 'especialista', component: EspecialistaRegisterComponent }
+    children: 
+    [
+      { path: 'paciente', loadComponent: () => import('./auth/register/paciente-register/paciente-register.component').then(m => m.PacienteRegisterComponent) },
+      { path: 'especialista', loadComponent: () => import('./auth/register/especialista-register/especialista-register.component').then(m => m.EspecialistaRegisterComponent) }
     ]
   },
 
   {
     path: 'admin/users',
-    component: AdminUsersComponent,
+    loadComponent: () => import('./admin/users/users.component').then(m => m.AdminUsersComponent),
     canActivate: [authGuard, roleGuard],
     data: { role: 'admin' }
   },
+
+
+  {
+    path: 'solicitar-turno',
+    loadComponent: () => import('./turnos/solicitar-turno/solicitar-turno.component')
+                        .then(m => m.SolicitarTurnoComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { role: ['paciente','admin'] }
+  },
+
   {
     path: 'paciente/mis-turnos',
-    component: MisTurnosPacienteComponent,
+    loadComponent: () => import('./paciente/mis-turnos/mis-turnos.component').then(m => m.MisTurnosPacienteComponent),
     canActivate: [authGuard, roleGuard],
     data: { role: 'paciente' }
   },
+  
   {
     path: 'especialista/mis-turnos',
-    component: MisTurnosEspecialistaComponent,
+    loadComponent: () => import('./especialista/mis-turnos/mis-turnos.component').then(m => m.MisTurnosEspecialistaComponent),
     canActivate: [authGuard, roleGuard],
     data: { role: 'especialista' }
   },
+
+  {
+  path: 'turnos',
+  loadComponent: () => import('./turnos/turnos-admin/turnos-admin.component')
+                       .then(m => m.TurnosAdminComponent),
+  canActivate: [authGuard, roleGuard],
+  data: { role: 'admin' }
+},
+
+{
+  path: 'mi-perfil',
+  loadComponent: () => import('./profile/mi-perfil/mi-perfil.component')
+                       .then(m => m.MiPerfilComponent),
+  canActivate: [authGuard, roleGuard],
+  data: { role: 'especialista' }
+}
+
+
   
 ];
 

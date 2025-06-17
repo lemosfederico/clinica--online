@@ -15,7 +15,7 @@
     
     <mat-icon class="login-icon">lock</mat-icon>
     <h3 class="login-title">Iniciar Sesión</h3>
-    <p class="login-subtitle">Accede a tu cuenta</p>
+    <p class="login-subtitle">Tu salud a un Click</p>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       <!-- Email -->
@@ -30,7 +30,7 @@
           El correo es obligatorio.
         </mat-error>
         <mat-error *ngIf="form.get('email')?.hasError('email')">
-          Formato inválido: usuario&#64;dominio.com.
+          El formato debe ser: usuario&#64;dominio.com.
         </mat-error>
       </mat-form-field>
 

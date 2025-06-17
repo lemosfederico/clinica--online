@@ -1,3 +1,38 @@
-/* src/app/especialista/mis-turnos/mis-turnos.component.scss */
-.full-width { width: 100%; }
-mat-list-item { margin-bottom: 0.5rem; }
+@use 'src/styles' as *;
+@use '@angular/material' as mat;
+
+
+.actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.full-width {
+  width: 100%;
+}
+.mat-form-field {
+  width: 100%;
+}
+table {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.back-button {
+  position: auto;
+  top: auto;
+  left: auto;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  mat-icon {
+    color: mat.get-color-from-palette($clinica--online-primary, 800);
+    font-size: 24px;
+  }
+}

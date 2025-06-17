@@ -1,0 +1,51 @@
+<!-- src/app/turnos/solicitar-turno/solicitar-turno.component.html -->
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+
+  <!-- Paciente (solo admin) -->
+  <mat-form-field appearance="outline" *ngIf="isAdmin" class="full-width">
+    <mat-label>Paciente</mat-label>
+    <mat-select formControlName="paciente">
+      <mat-option *ngFor="let p of pacientes" [value]="p.user_id">
+        {{ p.nombre }} {{ p.apellido }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Especialidad -->
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Especialidad</mat-label>
+    <mat-select formControlName="especialidad">
+      <mat-option *ngFor="let s of specialidades" [value]="s">{{ s }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Especialista -->
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Especialista</mat-label>
+    <mat-select formControlName="especialista">
+      <mat-option *ngFor="let e of especialistas" [value]="e.user_id">
+        {{ e.nombre }} {{ e.apellido }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Fecha: próximos 15 días -->
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Fecha</mat-label>
+    <mat-select formControlName="fecha">
+      <mat-option *ngFor="let f of fechasProximos15" [value]="f.value">
+        {{ f.label }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Hora -->
+  <mat-form-field appearance="outline">
+    <mat-label>Hora</mat-label>
+    <input matInput type="time" formControlName="hora">
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+    Solicitar Turno
+  </button>
+</form>

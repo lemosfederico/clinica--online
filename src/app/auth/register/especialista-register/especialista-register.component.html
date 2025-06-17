@@ -1,116 +1,98 @@
-<!-- src/app/auth/register/especialista-register/especialista-register.component.html -->
-<div class="form-container" [class.loading]="loading">
-  <h3>Registro de Especialista</h3>
+<!-- Registro de Especialista -->
+<div class="register-container">
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+ <p class="subtitle">Registro de Especialista</p>
 
-       <!-- Nombre -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Nombre</mat-label>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-grid">
+
+    <!-- Nombre y Apellido (2 columnas) -->
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre*</mat-label>
       <input matInput formControlName="nombre" />
       <mat-error *ngIf="form.get('nombre')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('nombre')?.hasError('minlength')">
-        Mínimo 3 caracteres
-      </mat-error>
     </mat-form-field>
 
-  <!-- Apellido -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Apellido</mat-label>
+    <mat-form-field appearance="outline">
+      <mat-label>Apellido*</mat-label>
       <input matInput formControlName="apellido" />
       <mat-error *ngIf="form.get('apellido')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('apellido')?.hasError('minlength')">
-        Mínimo 3 caracteres
-      </mat-error>
     </mat-form-field>
 
-    <!-- Edad -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Edad</mat-label>
+    <!-- Edad y DNI (2 columnas) -->
+    <mat-form-field appearance="outline">
+      <mat-label>Edad*</mat-label>
       <input matInput type="number" formControlName="edad" />
       <mat-error *ngIf="form.get('edad')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('edad')?.hasError('min')">
-        Debe ser mayor que 0 y menor que 120
-      </mat-error>
+      <mat-error *ngIf="form.get('edad')?.hasError('min')">≥ 18 años</mat-error>
+      <mat-error *ngIf="form.get('edad')?.hasError('max')">≤ 120 años</mat-error>
     </mat-form-field>
 
-   <!-- DNI -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>DNI</mat-label>
+    <mat-form-field appearance="outline">
+      <mat-label>DNI*</mat-label>
       <input matInput formControlName="dni" />
       <mat-error *ngIf="form.get('dni')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('dni')?.hasError('pattern')">
-        Deben ser solo números
-      </mat-error>
+      <mat-error *ngIf="form.get('dni')?.hasError('pattern')">Solo números</mat-error>
     </mat-form-field>
 
-      <!-- Email -->
+    <!-- Email (full width) -->
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Email</mat-label>
-      <input matInput formControlName="email" placeholder="usuario@dominio.com"/>
+      <mat-label>Email*</mat-label>
+      <input matInput formControlName="email" />
       <mat-error *ngIf="form.get('email')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('email')?.hasError('email')">
-        El formato del correo debe ser usuario&#64;dominio.com.
-      </mat-error>
+      <mat-error *ngIf="form.get('email')?.hasError('email')">Formato inválido</mat-error>
     </mat-form-field>
 
-
-  <!-- Contraseña -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
+    <!-- Contraseña / Confirmar contraseña (2 columnas) -->
+    <mat-form-field appearance="outline">
+      <mat-label>Contraseña*</mat-label>
       <input matInput type="password" formControlName="password" />
-      <mat-error *ngIf="form.get('password')?.hasError('required')">
-        Requerido
-      </mat-error>
-      <mat-error *ngIf="form.get('password')?.hasError('minlength')">
-        Mínimo 6 caracteres
-      </mat-error>
+      <mat-error *ngIf="form.get('password')?.hasError('required')">Requerido</mat-error>
+      <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
     </mat-form-field>
 
-
-       <!-- Confirmar Contraseña -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Confirmar Contraseña</mat-label>
+    <mat-form-field appearance="outline">
+      <mat-label>Confirmar Contraseña*</mat-label>
       <input matInput type="password" formControlName="confirmPassword" />
-      <mat-error *ngIf="form.hasError('mismatch')">
-        Las contraseñas no coinciden
-      </mat-error>
+      <mat-error *ngIf="form.hasError('mismatch')">No coinciden</mat-error>
     </mat-form-field>
 
-    <!-- Especialidades predefinidas -->
-    <fieldset formGroupName="predefinedSpecs" class="specs-group">
+    <!-- Especialidades (full width) -->
+    <fieldset class="full-width">
       <legend>Especialidades</legend>
-      <mat-checkbox *ngFor="let s of predefinedList"
-                    [formControlName]="s.key">
-        {{ s.label }}
-      </mat-checkbox>
+      <div class="specs">
+        <mat-checkbox *ngFor="let s of predefinedList" [formControlName]="s.key">
+          {{ s.label }}
+        </mat-checkbox>
+      </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Otra especialidad (opcional)</mat-label>
+        <input matInput formControlName="customSpecialty" />
+      </mat-form-field>
     </fieldset>
 
-    <!-- Opción de agregar otra -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Otra especialidad (opcional)</mat-label>
-      <input matInput formControlName="customSpecialty" placeholder="Ej: Ginecología" />
-    </mat-form-field>
-
-    <div *ngIf="specialtyError" class="error">
-      Debes elegir al menos una especialidad o agregar una.
-    </div>
-
-    <!-- Imagen de perfil -->
-    <div class="file-input">
-      <label>Imagen de Perfil:</label>
+    <!-- Imagen de Perfil (full width) -->
+    <div class="file-input full-width">
+      <label>Imagen de Perfil*</label>
       <input type="file" (change)="onFileChange($event)" />
       <div class="error" *ngIf="form.get('profileImage')?.hasError('required')">
         Debes subir una imagen de perfil
       </div>
     </div>
 
-    <div *ngIf="error" class="submit-error">{{ error }}</div>
+    <!-- reCAPTCHA (full width) -->
+    <div class="full-width">
+      <re-captcha formControlName="recaptcha" [siteKey]="siteKey"></re-captcha>
+      <div class="error" *ngIf="form.get('recaptcha')?.hasError('required')">
+        Debes verificar que no eres un robot.
+      </div>
+    </div>
 
-    <button mat-flat-button color="primary"
-            type="submit"
-            [disabled]="form.invalid || loading">
-      {{ loading ? 'Registrando…' : 'Registrar Especialista' }}
-    </button>
+    <!-- Botón Registrar (full width) -->
+    <div class="full-width actions">
+      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading">
+        {{ loading ? 'Registrando…' : 'Registrar Especialista' }}
+      </button>
+    </div>
+
   </form>
 </div>
