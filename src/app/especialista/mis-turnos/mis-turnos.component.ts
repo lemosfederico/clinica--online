@@ -1,29 +1,28 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule }      from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { MatTableDataSource, MatTableModule }    from '@angular/material/table';
+import { MatTableModule }    from '@angular/material/table';
 import { MatFormFieldModule }from '@angular/material/form-field';
 import { MatInputModule }    from '@angular/material/input';
 import { MatButtonModule }   from '@angular/material/button';
 import { MatIconModule }     from '@angular/material/icon';
 import { MatDialog, MatDialogModule }        from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule }    from '@angular/material/snack-bar';
+import { RouterModule }      from '@angular/router';
+import { Location }          from '@angular/common';
 
 import { SupabaseService }   from '../../core/supabase.service';
-import { AuthService } from 'src/app/core/auth.service';
-import { Turno } from '../../models/turno.model';  
+import { AuthService }       from '../../core/auth.service';
+import { Turno }             from '../../models/turno.model';
 import { CancelarTurnoDialogComponent } from '../../turnos/cancelar-turno-dialog/cancelar-turno-dialog.component';
-import { VerResenaDialogComponent } from '../../turnos/ver-resena-dialog/ver-resena-dialog.component';
-import { EncuestaDialogComponent } from '../../turnos/encuesta-dialog/encuesta-dialog.component';
-import { Location } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { VerResenaDialogComponent }     from '../../turnos/ver-resena-dialog/ver-resena-dialog.component';
+import { EncuestaDialogComponent }      from '../../turnos/encuesta-dialog/encuesta-dialog.component';
 
 interface Perfil {
   user_id:  string;
   nombre:   string;
   apellido: string;
 }
-
 
 @Component({
   standalone: true,
@@ -44,9 +43,13 @@ interface Perfil {
   styleUrls: ['./mis-turnos.component.scss']
 })
 export class MisTurnosEspecialistaComponent implements OnInit {
+  filterCtrl = new FormControl('');
   displayedColumns = ['fecha','hora','especialidad','paciente','estado','acciones'];
+
+  /** lista maestra sin filtrar */
+  allTurnos: Turno[] = [];
+  /** origen real de la tabla */
   dataSource: Turno[] = [];
-  filterCtrl       = new FormControl('');
 
   constructor(
     private supa: SupabaseService,
@@ -54,27 +57,30 @@ export class MisTurnosEspecialistaComponent implements OnInit {
     private dialog: MatDialog,
     private snack: MatSnackBar,
     private location: Location
-    
   ) {}
 
   async ngOnInit() {
     await this.loadTurnos();
-    // filtro local
+
     this.filterCtrl.valueChanges.subscribe(term => {
-      const t = (term || '').trim().toLowerCase();
-      this.dataSource = this.dataSource.map(x => x) // forzar refresh
-        .filter(turno =>
-          turno.especialidad.toLowerCase().includes(t) ||
-          `${turno.paciente?.nombre} ${turno.paciente?.apellido}`.toLowerCase().includes(t)
+      const txt = (term || '').trim().toLowerCase();
+      if (!txt) {
+        // si limpiaron el filtro, restauramos toda la lista
+        this.dataSource = this.allTurnos;
+      } else {
+        this.dataSource = this.allTurnos.filter(t =>
+          t.especialidad.toLowerCase().includes(txt)
+          || `${t.paciente?.nombre ?? ''} ${t.paciente?.apellido ?? ''}`.toLowerCase().includes(txt)
         );
+      }
     });
   }
 
-   private async loadTurnos() {
+  private async loadTurnos() {
     const user = await this.auth.currentUser();
     if (!user) return;
 
-    // 1) Traer turnos sin expansiones
+    // 1) traigo sólo campos básicos
     const { data: raw, error } = await this.supa
       .from('turnos')
       .select('id,fecha,hora,especialidad,paciente_id,estado,comentario_especialista,comentario_paciente')
@@ -82,40 +88,45 @@ export class MisTurnosEspecialistaComponent implements OnInit {
       .order('fecha', { ascending: false });
 
     if (error || !raw) {
-      console.error('Error cargando turnos especialista:', error);
+      console.error('Error cargando turnos:', error);
       return;
     }
 
-    // 2) Obtener lista única de paciente_ids
+    // 2) obtengo los perfiles de los pacientes
     const pacienteIds = Array.from(new Set(raw.map((r: any) => r.paciente_id)));
-
-    // 3) Cargar perfiles de pacientes
     const { data: perfData, error: err2 } = await this.supa
       .from('profiles')
       .select('user_id,nombre,apellido')
       .in('user_id', pacienteIds);
 
-    if (err2) {
+    if (err2 || !perfData) {
       console.error('Error cargando perfiles de pacientes:', err2);
       return;
     }
-
     const perfilMap = new Map<string, Perfil>();
-    (perfData || []).forEach((p: any) => perfilMap.set(p.user_id, p));
+    perfData.forEach(p => perfilMap.set(p.user_id, p));
 
-    // 4) Mapear raw a Turno con paciente embebido
-    this.dataSource = (raw as any[]).map(r => ({
+    // 3) mapeo al modelo Turno (con paciente embebido)
+    const mapped = (raw as any[]).map(r => ({
       id:           r.id,
       fecha:        r.fecha,
       hora:         r.hora,
       especialidad: r.especialidad,
-      paciente:     perfilMap.get(r.paciente_id) || { user_id:'', nombre:'', apellido:'' },
-      especialista: r.especialista_id || '', // Agregar el campo especialista
+      paciente:     perfilMap.get(r.paciente_id)!,
+      especialista: { user_id: user.id, nombre: '', apellido: '' }, // no usamos aquí
       estado:       r.estado,
       comentario_especialista: r.comentario_especialista,
       comentario_paciente:     r.comentario_paciente
     }));
+
+    // guardo lista maestra y tabla
+    this.allTurnos  = mapped;
+    this.dataSource = mapped;
   }
+
+  // -----------------------------
+  // ACCIONES SEGÚN ESTADO
+  // -----------------------------
 
   cancelar(t: Turno) {
     if (['Aceptado','Realizado','Rechazado'].includes(t.estado)) return;
@@ -126,8 +137,9 @@ export class MisTurnosEspecialistaComponent implements OnInit {
         .from('turnos')
         .update({ estado: 'Cancelado', comentario_especialista: motivo })
         .eq('id', t.id);
-      if (error) this.snack.open('No se pudo cancelar','Cerrar',{duration:3000});
-      else {
+      if (error) {
+        this.snack.open('No se pudo cancelar','Cerrar',{duration:3000});
+      } else {
         this.snack.open('Turno cancelado','Cerrar',{duration:2000});
         await this.loadTurnos();
       }
@@ -143,8 +155,9 @@ export class MisTurnosEspecialistaComponent implements OnInit {
         .from('turnos')
         .update({ estado: 'Rechazado', comentario_especialista: motivo })
         .eq('id', t.id);
-      if (error) this.snack.open('No se pudo rechazar','Cerrar',{duration:3000});
-      else {
+      if (error) {
+        this.snack.open('No se pudo rechazar','Cerrar',{duration:3000});
+      } else {
         this.snack.open('Turno rechazado','Cerrar',{duration:2000});
         await this.loadTurnos();
       }
@@ -158,8 +171,9 @@ export class MisTurnosEspecialistaComponent implements OnInit {
       .update({ estado: 'Aceptado' })
       .eq('id', t.id)
       .then(({ error }) => {
-        if (error) this.snack.open('Error al aceptar','Cerrar',{duration:3000});
-        else {
+        if (error) {
+          this.snack.open('Error al aceptar','Cerrar',{duration:3000});
+        } else {
           this.snack.open('Turno aceptado','Cerrar',{duration:2000});
           this.loadTurnos();
         }
@@ -175,17 +189,24 @@ export class MisTurnosEspecialistaComponent implements OnInit {
         .from('turnos')
         .update({ estado: 'Realizado', comentario_especialista: texto })
         .eq('id', t.id);
-      if (error) this.snack.open('No se pudo finalizar','Cerrar',{duration:3000});
-      else {
+      if (error) {
+        this.snack.open('No se pudo finalizar','Cerrar',{duration:3000});
+      } else {
         this.snack.open('Turno finalizado','Cerrar',{duration:2000});
-        await this.loadTurnos();
+        this.loadTurnos();
       }
     });
   }
 
   verResena(t: Turno) {
-    if (!t.comentario_especialista) return;
-    this.dialog.open(VerResenaDialogComponent, { data: { comentario: t.comentario_especialista } });
+    // ahora mostramos la calificación que dejó el paciente
+    if (!t.comentario_paciente) return;
+    this.dialog.open(VerResenaDialogComponent, {
+      data: {
+        comentario: t.comentario_paciente,
+        title:      'Calificación del Paciente'
+      }
+    });
   }
 
   goBack(): void {

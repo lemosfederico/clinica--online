@@ -1,9 +1,9 @@
-          <!-- Botón Volver -->
+<!-- Botón Volver -->
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
-
+<!-- Botón Solicitar Turno -->
 <div class="actions-bar">
   <button mat-flat-button color="accent" routerLink="/solicitar-turno">
     <mat-icon>add_circle</mat-icon>
@@ -11,12 +11,14 @@
   </button>
 </div>
 
+<!-- Filtro -->
 <mat-form-field appearance="outline" class="full-width">
   <mat-label>Filtrar por especialidad o especialista</mat-label>
   <input matInput [formControl]="filterCtrl"
          placeholder="Ej: Cardiología o Dr. Pérez">
 </mat-form-field>
 
+<!-- Tabla de Turnos -->
 <table mat-table [dataSource]="dataSource" class="mat-elevation-z8 full-width">
   <!-- Fecha -->
   <ng-container matColumnDef="fecha">
@@ -50,41 +52,49 @@
     <td mat-cell *matCellDef="let t">{{ t.estado }}</td>
   </ng-container>
 
-<!-- Columna Acciones -->
+  <!-- Acciones -->
   <ng-container matColumnDef="acciones">
     <th mat-header-cell *matHeaderCellDef>Acciones</th>
     <td mat-cell *matCellDef="let t">
-      <!-- Cancelar turno (si NO está realizado) -->
+
+      <!-- Cancelar turno: sólo si NO está Realizado -->
       <button mat-button color="warn"
               *ngIf="t.estado !== 'Realizado'"
               (click)="cancelar(t)">
         Cancelar
       </button>
 
-      <!-- Ver reseña (si el especialista dejó comentario) -->
+      <!-- Ver reseña: sólo si el especialista dejó comentario -->
       <button mat-button
-              *ngIf="t.comentario_especialista"
+              *ngIf="!!t.comentario_especialista"
               (click)="verResena(t)">
         Ver Reseña
       </button>
 
-      <!-- Completar encuesta (si está Realizado, hay reseña y el paciente no ha contestado) -->
+      <!-- Completar encuesta: sólo si está Realizado, hay reseña y aún no contestó -->
       <button mat-button color="primary"
-              *ngIf="t.estado === 'Realizado'
-                     && t.comentario_especialista
-                     && !t.comentario_paciente"
+              *ngIf="
+                t.estado === 'Realizado'
+                && t.comentario_especialista
+                && !t.comentario_paciente
+              "
               (click)="completarEncuesta(t)">
         Completar Encuesta
       </button>
 
-      <!-- Calificar Atención (si está Realizado y aún no ha calificado) -->
+      <!-- Calificar Atención: sólo si está Realizado y aún no calificó -->
       <button mat-button color="accent"
-              *ngIf="t.estado === 'Realizado' && !t.comentario_paciente"
+              *ngIf="
+                t.estado === 'Realizado'
+                && !t.comentario_paciente
+              "
               (click)="calificar(t)">
         Calificar Atención
       </button>
+
     </td>
   </ng-container>
+
 
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
   <tr mat-row        *matRowDef="let row; columns: displayedColumns;"></tr>

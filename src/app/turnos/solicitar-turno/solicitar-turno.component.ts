@@ -16,6 +16,9 @@ import { RouterModule }                       from '@angular/router';
 
 import { SupabaseService }                    from '../../core/supabase.service';
 import { AuthService }                        from '../../core/auth.service';
+import { Location } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 
 interface Perfil {
   user_id:  string;
@@ -34,12 +37,14 @@ interface Perfil {
     MatSelectModule,
     MatButtonModule,
     MatSnackBarModule,
-    RouterModule
+    RouterModule,
+    MatIconModule,
   ],
   templateUrl: './solicitar-turno.component.html',
   styleUrls: ['./solicitar-turno.component.scss']
 })
 export class SolicitarTurnoComponent implements OnInit {
+[x: string]: any;
   form: FormGroup;
   specialidades = ['Cardiología','Dermatología','Neurología','Pediatría'];
   especialistas: Perfil[] = [];
@@ -51,7 +56,9 @@ export class SolicitarTurnoComponent implements OnInit {
     private fb: FormBuilder,
     private supa: SupabaseService,
     private auth: AuthService,
-    private snack: MatSnackBar
+    private snack: MatSnackBar,
+    private location: Location,
+    private router: Router
   ) {
     this.form = this.fb.group({
       paciente:      ['', Validators.required],      // solo admins
@@ -133,6 +140,13 @@ export class SolicitarTurnoComponent implements OnInit {
     } else {
       this.snack.open('Turno solicitado','Cerrar',{duration:2000});
       this.form.reset({ paciente: this.isAdmin ? '' : user!.id });
+
+      // volvemos automáticamente a la lista de mis-turnos
+      this.router.navigateByUrl('/paciente/mis-turnos');
     }
+  }
+
+  goBack() {
+    this.location.back();
   }
 }

@@ -1,16 +1,17 @@
-          <!-- Botón Volver -->
+<!-- Botón Volver -->
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
-
+<!-- Filtro -->
 <mat-form-field appearance="outline" class="full-width">
   <mat-label>Filtrar por especialidad o paciente</mat-label>
-  <input matInput [formControl]="filterCtrl" placeholder="Ej: Pediatría o Ana Gómez">
+  <input matInput [formControl]="filterCtrl"
+         placeholder="Ej: Pediatría o Juan Pérez">
 </mat-form-field>
 
+<!-- Tabla de Turnos -->
 <table mat-table [dataSource]="dataSource" class="mat-elevation-z8 full-width">
-
   <!-- Fecha -->
   <ng-container matColumnDef="fecha">
     <th mat-header-cell *matHeaderCellDef>Fecha</th>
@@ -32,7 +33,9 @@
   <!-- Paciente -->
   <ng-container matColumnDef="paciente">
     <th mat-header-cell *matHeaderCellDef>Paciente</th>
-    <td mat-cell *matCellDef="let t">{{ t.paciente.nombre }} {{ t.paciente.apellido }}</td>
+    <td mat-cell *matCellDef="let t">
+      {{ t.paciente.nombre }} {{ t.paciente.apellido }}
+    </td>
   </ng-container>
 
   <!-- Estado -->
@@ -41,44 +44,49 @@
     <td mat-cell *matCellDef="let t">{{ t.estado }}</td>
   </ng-container>
 
+    <!-- Acciones -->
   <ng-container matColumnDef="acciones">
     <th mat-header-cell *matHeaderCellDef>Acciones</th>
     <td mat-cell *matCellDef="let t">
 
-      <!-- Sólo muestro “Aceptar” cuando el turno está pendiente -->
-      <button
-        mat-button
-        color="primary"
-        *ngIf="t.estado === 'Pendiente'"
-        (click)="aceptar(t)">
+      <!-- Aceptar: solo si NO fue Realizado, Cancelado ni Rechazado -->
+      <button mat-button color="primary"
+              *ngIf="!['Realizado','Cancelado','Rechazado'].includes(t.estado)"
+              (click)="aceptar(t)">
         Aceptar
       </button>
 
-      <!-- Los demás botones también puedes controlarlos por estado -->
-      <button
-        mat-button
-        color="warn"
-        *ngIf="['Pendiente','Aceptado'].includes(t.estado) === false"
-        (click)="cancelar(t)">
+      <!-- Cancelar: solo si NO fue Aceptado, Realizado ni Rechazado -->
+      <button mat-button color="warn"
+              *ngIf="!['Aceptado','Realizado','Rechazado'].includes(t.estado)"
+              (click)="cancelar(t)">
         Cancelar
       </button>
 
-      <button
-        mat-button
-        *ngIf="t.estado === 'Aceptado'"
-        (click)="finalizar(t)">
+      <!-- Rechazar: solo si NO fue Aceptado, Realizado ni Cancelado -->
+      <button mat-button color="warn"
+              *ngIf="!['Aceptado','Realizado','Cancelado'].includes(t.estado)"
+              (click)="rechazar(t)">
+        Rechazar
+      </button>
+
+      <!-- Finalizar: solo si fue Aceptado -->
+      <button mat-button
+              *ngIf="t.estado === 'Aceptado'"
+              (click)="finalizar(t)">
         Finalizar
       </button>
 
-      <button
-        mat-button
-        *ngIf="t.comentario_especialista"
-        (click)="verResena(t)">
+      <!-- Ver Reseña: solo si ya hay comentario del especialista -->
+      <button mat-button
+              *ngIf="t.comentario_especialista"
+              (click)="verResena(t)">
         Ver Reseña
       </button>
 
     </td>
   </ng-container>
+
 
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
   <tr mat-row        *matRowDef="let row; columns: displayedColumns;"></tr>

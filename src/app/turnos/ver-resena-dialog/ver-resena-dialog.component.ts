@@ -3,6 +3,11 @@ import { CommonModule }           from '@angular/common';
 import { MatButtonModule }        from '@angular/material/button';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 
+export interface VerResenaData {
+  comentario: string;
+  title:      string;
+}
+
 @Component({
   standalone: true,
   selector: 'app-ver-resena-dialog',
@@ -17,7 +22,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/materia
 export class VerResenaDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<VerResenaDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { comentario: string }
+    @Inject(MAT_DIALOG_DATA) public data: VerResenaData
   ) {}
   
   cerrar() {

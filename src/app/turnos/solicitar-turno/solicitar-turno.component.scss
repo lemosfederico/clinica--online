@@ -1,11 +1,72 @@
 /* src/app/turnos/solicitar-turno/solicitar-turno.component.scss */
+@use 'src/styles' as *;
+@use '@angular/material' as mat;
+
+
+
+.solicitar-turno-container {
+  position: relative;
+  max-width: 600px;
+  margin: 2rem auto;
+  background: #f7fefe;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  h2 {
+    text-align: center;
+    margin: 0 0 1rem;
+    font-size: 1.5rem;
+  }
+}
+
+.back-button {
+  position: auto;
+  top: auto;
+  left: auto;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  mat-icon {
+    color: mat.get-color-from-palette($clinica--online-primary, 800);
+    font-size: 24px;
+  }
+}
+
+
 .form-container {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
-  max-width: 450px;
-  margin: 2rem auto;
 }
 
 .full-width {
   width: 100%;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+button[mat-raised-button] {
+  width: 100%;
+  padding: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
 }
