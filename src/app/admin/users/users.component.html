@@ -1,9 +1,25 @@
-    <!-- Botón Volver -->
-  <button mat-icon-button class="back-button" (click)="goBack()">
-    <mat-icon>arrow_back</mat-icon>
-  </button>
+<!-- src/app/admin/users/users.component.html -->
 
-<h2>Gestión de Usuarios</h2>
+<!-- Botón Volver -->
+<button mat-icon-button class="back-button" (click)="goBack()">
+  <mat-icon>arrow_back</mat-icon>
+</button>
+
+<div class="actions-bar">
+  <!-- Ya tenías tu título -->
+  <h2>Gestión de Usuarios</h2>
+
+  <!-- Nuevo botón Turnos -->
+  <button
+    mat-flat-button
+    color="primary"
+    routerLink="/turnos"
+    style="margin-left: auto;"
+  >
+    <mat-icon>schedule</mat-icon>
+    Turnos
+  </button>
+</div>
 
 <table mat-table [dataSource]="profiles" class="mat-elevation-z8 full-width">
   <!-- Fotos -->
@@ -62,7 +78,7 @@
     <td mat-cell *matCellDef="let p">{{ p.approved ? 'Sí' : 'No' }}</td>
   </ng-container>
 
- <!-- Acciones -->
+  <!-- Acciones -->
   <ng-container matColumnDef="actions">
     <th mat-header-cell *matHeaderCellDef>Acciones</th>
     <td mat-cell *matCellDef="let p">
@@ -78,9 +94,8 @@
     </td>
   </ng-container>
 
-
   <tr mat-header-row *matHeaderRowDef="columns"></tr>
-  <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+  <tr mat-row        *matRowDef="let row; columns: columns;"></tr>
 </table>
 
 <hr />
@@ -120,25 +135,24 @@
       <mat-error *ngIf="creatingForm.get('edad')?.hasError('max')">
         La edad no puede superar los 120 años.
       </mat-error>
-
     </mat-form-field>
 
     <!-- DNI -->
     <mat-form-field appearance="outline">
       <mat-label>DNI*</mat-label>
       <input matInput formControlName="dni" />
-       <mat-error *ngIf="creatingForm.get('dni')?.hasError('required')">
-      El DNI es obligatorio.
-    </mat-error>
-    <mat-error *ngIf="creatingForm.get('dni')?.hasError('pattern')">
-      El DNI debe contener sólo números.
-    </mat-error>
-    <mat-error *ngIf="creatingForm.get('dni')?.hasError('minlength')">
-      Debe tener al menos 7 dígitos.
-    </mat-error>
-    <mat-error *ngIf="creatingForm.get('dni')?.hasError('maxlength')">
-      No puede tener más de 9 dígitos.
-    </mat-error>
+      <mat-error *ngIf="creatingForm.get('dni')?.hasError('required')">
+        El DNI es obligatorio.
+      </mat-error>
+      <mat-error *ngIf="creatingForm.get('dni')?.hasError('pattern')">
+        El DNI debe contener sólo números.
+      </mat-error>
+      <mat-error *ngIf="creatingForm.get('dni')?.hasError('minlength')">
+        Debe tener al menos 7 dígitos.
+      </mat-error>
+      <mat-error *ngIf="creatingForm.get('dni')?.hasError('maxlength')">
+        No puede tener más de 9 dígitos.
+      </mat-error>
     </mat-form-field>
 
     <!-- Email -->
@@ -196,4 +210,5 @@
       {{ errorMessage }}
     </mat-error>
   </div>
+
 </form>

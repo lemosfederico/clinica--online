@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ErrorService } from '../../core/error.service';
 import { Location } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterModule } from '@angular/router';
 
 interface Profile {
   user_id:   string;
@@ -18,7 +19,6 @@ interface Profile {
   apellido:  string;
   edad:      number;
   dni:       string;
-  //email:     string;
   role:      'especialista' | 'admin';
   approved:  boolean;
   image_urls?: string[];
@@ -36,7 +36,8 @@ interface Profile {
     MatSelectModule,
     ReactiveFormsModule,
     MatSnackBarModule,
-    MatIconModule
+    MatIconModule,
+    RouterModule
   ],
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss']

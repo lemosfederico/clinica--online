@@ -1,75 +1,73 @@
-<!-- src/app/profile/mi-perfil/mi-perfil.component.html -->
-<mat-card>
-  <mat-card-header>
-    <img
-      mat-card-avatar
-      *ngIf="profile.image_urls?.length"
-      [src]="profile.image_urls?.[0]"
-    >
-    <mat-card-title>
-      {{ profile.nombre }} {{ profile.apellido }}
-    </mat-card-title>
-    <mat-card-subtitle>
-      {{ profile.role | titlecase }}
-    </mat-card-subtitle>
-  </mat-card-header>
+<!-- Botón Volver -->
+<button mat-icon-button class="back-button" (click)="goBack()">
+  <mat-icon>arrow_back</mat-icon>
+</button>
 
-  <mat-card-content>
-    <p><strong>Edad:</strong> {{ profile.edad }}</p>
-    <p><strong>DNI:</strong> {{ profile.dni }}</p>
-    <p><strong>Email:</strong> {{ profile.email }}</p>
-    <p *ngIf="profile.specialties">
-      <strong>Especialidades:</strong>
-      {{ profile.specialties.join(', ') }}
-    </p>
-  </mat-card-content>
-</mat-card>
+<ng-container *ngIf="!loading; else cargando">
+  <!-- Tarjeta con datos del perfil -->
+  <mat-card class="profile-card">
+    <mat-card-header>
+      <div mat-card-avatar class="avatar-container">
+        <img *ngFor="let url of profile.image_urls" [src]="url" class="avatar">
+      </div>
+      <mat-card-title>{{ profile.nombre }} {{ profile.apellido }}</mat-card-title>
+      <mat-card-subtitle>{{ profile.role | titlecase }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p><strong>Edad:</strong> {{ profile.edad }}</p>
+      <p><strong>DNI:</strong> {{ profile.dni }}</p>
+    </mat-card-content>
+  </mat-card>
 
-<!-- Sección de horarios solo para especialistas -->
-<div *ngIf="profile.role==='especialista'" class="availability-section">
-  <h3>Mis Horarios</h3>
-  <form [formGroup]="availabilityForm">
+  <!-- Mis Horarios (solo especialistas) -->
+  <section *ngIf="profile.role==='especialista'" class="horarios-section">
+    <h2>Mis Horarios</h2>
 
-    <div formArrayName="slots" *ngFor="let grp of slots.controls; let i = index">
-      <div [formGroupName]="i" class="spec-group">
-        <h4>{{ grp.get('specialty')!.value }}</h4>
-        <div formArrayName="times">
-          <div
-           *ngFor="let t of getTimes(i).controls; let j = index"
-            [formGroupName]="j"
-            class="time-row"
-          >
-            <mat-form-field appearance="outline">
-              <mat-label>Día</mat-label>
-              <mat-select formControlName="day">
-                <mat-option *ngFor="let d of days" [value]="d">{{ d }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Desde</mat-label>
-              <input matInput type="time" formControlName="start">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Hasta</mat-label>
-              <input matInput type="time" formControlName="end">
-            </mat-form-field>
-
-            <button mat-icon-button color="warn" (click)="removeSlot(i,j)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
+    <!-- FormGroup que envuelve el FormArray -->
+    <form [formGroup]="scheduleForm">
+      <div *ngFor="let spec of profile.specialties">
+        <div class="spec-header">
+          <h3>{{ spec }}</h3>
+          <button mat-mini-fab color="primary" (click)="addEntry(spec)">
+            <mat-icon>add</mat-icon>
+          </button>
         </div>
+      </div>
 
-        <button mat-button color="primary" (click)="addSlot(i)">
-          <mat-icon>add</mat-icon> Agregar franja
+      <div formArrayName="entries">
+        <div *ngFor="let grp of entries.controls; let i = index" [formGroupName]="i" class="entry-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Día</mat-label>
+            <mat-select formControlName="day">
+              <mat-option *ngFor="let d of days" [value]="d">{{ d }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Desde</mat-label>
+            <input matInput type="time" formControlName="from">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Hasta</mat-label>
+            <input matInput type="time" formControlName="to">
+          </mat-form-field>
+
+          <button mat-icon-button color="warn" (click)="removeEntry(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button mat-flat-button color="accent" (click)="saveSchedule()">
+          Guardar Horarios
         </button>
       </div>
-    </div>
+    </form>
+  </section>
+</ng-container>
 
-    <button mat-raised-button color="accent" (click)="saveAvailability()">
-      Guardar Mis Horarios
-    </button>
-  </form>
-</div>
+<ng-template #cargando>
+  <div class="loading">Cargando perfil…</div>
+</ng-template>

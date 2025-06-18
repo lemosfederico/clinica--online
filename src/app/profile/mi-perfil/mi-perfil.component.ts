@@ -1,21 +1,16 @@
-// src/app/profile/mi-perfil/mi-perfil.component.ts
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  ReactiveFormsModule,
-  FormBuilder,
-  FormGroup,
-  FormArray,
-  Validators
-} from '@angular/forms';
-import { MatCardModule }         from '@angular/material/card';
-import { MatFormFieldModule }    from '@angular/material/form-field';
-import { MatInputModule }        from '@angular/material/input';
-import { MatSelectModule }       from '@angular/material/select';
-import { MatButtonModule }       from '@angular/material/button';
-import { MatIconModule }         from '@angular/material/icon';
-import { SupabaseService }       from '../../core/supabase.service';
-import { AuthService }           from '../../core/auth.service';
+import { Component, OnInit }                 from '@angular/core';
+import { CommonModule }                      from '@angular/common';
+import { FormBuilder, FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule }                      from '@angular/router';
+import { MatCardModule }                     from '@angular/material/card';
+import { MatIconModule }                     from '@angular/material/icon';
+import { MatButtonModule }                   from '@angular/material/button';
+import { MatFormFieldModule }                from '@angular/material/form-field';
+import { MatInputModule }                    from '@angular/material/input';
+import { MatSelectModule }                   from '@angular/material/select';
+import { SupabaseService }                   from '../../core/supabase.service';
+import { AuthService }                       from '../../core/auth.service';
+import { Location }                          from '@angular/common';
 
 interface Profile {
   user_id:     string;
@@ -23,11 +18,9 @@ interface Profile {
   apellido:    string;
   edad:        number;
   dni:         string;
-  email:       string;
-  role:        'paciente' | 'especialista' | 'admin';
-  approved:    boolean;
-  specialties?: string[];
+  role:        'paciente' | 'especialista';
   image_urls?: string[];
+  specialties?: string[];
 }
 
 @Component({
@@ -35,131 +28,114 @@ interface Profile {
   selector: 'app-mi-perfil',
   imports: [
     CommonModule,
-    ReactiveFormsModule,
+    RouterModule,
     MatCardModule,
+    MatIconModule,
+    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule,
-    MatIconModule
+    ReactiveFormsModule
   ],
   templateUrl: './mi-perfil.component.html',
   styleUrls: ['./mi-perfil.component.scss']
 })
 export class MiPerfilComponent implements OnInit {
   profile!: Profile;
-  availabilityForm!: FormGroup;
+  loading = true;
+
   days = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-  
+
+  scheduleForm!: FormGroup;
 
   constructor(
     private supa: SupabaseService,
     private auth: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private location: Location
   ) {}
 
   async ngOnInit() {
+    // 1) Cargo perfil
     const user = await this.auth.currentUser();
     if (!user) return;
-
-    // 1) Cargar perfil
-    const { data } = await this.supa
+    const { data, error } = await this.supa
       .from('profiles')
-      .select('user_id,nombre,apellido,edad,dni,email,role,approved,specialties,image_urls')
+      .select('user_id,nombre,apellido,edad,dni,role,image_urls,specialties')
       .eq('user_id', user.id)
       .single();
-    this.profile = data as Profile;
+    if (error || !data) {
+      console.error(error);
+      return;
+    }
+    this.profile = data;
+    this.loading = false;
 
-    // 2) Si es especialista, inicializar formulario de horarios
+    // 2) Si soy especialista, preparo form de horarios
     if (this.profile.role === 'especialista') {
-      this.initAvailabilityForm(user.id);
+      // inicializo el FormGroup
+      this.scheduleForm = this.fb.group({
+        entries: this.fb.array([])
+      });
+
+      // intento cargar horarios previos
+      const { data: prev, error: e2 } = await this.supa
+        .from('horarios')
+        .select('specialty,day,from,to')
+        .eq('user_id', this.profile.user_id);
+      if (!e2 && prev) {
+        prev.forEach((h: any) => {
+          this.entries.push(this.fb.group({
+            specialty: [h.specialty],
+            day:       [h.day],
+            from:      [h.from],
+            to:        [h.to]
+          }));
+        });
+      }
     }
   }
 
-  private async initAvailabilityForm(specialistId: string) {
-    // 2.1) Cargar franjas existentes
-    const { data: avail } = await this.supa
-      .from('availability')
-      .select('*')
-      .eq('specialist_id', specialistId);
-
-    // 2.2) Crear FormArray de grupos por especialidad
-    const slots = this.fb.array(
-      this.profile.specialties?.map(spec => {
-        const timesArray = this.fb.array(
-          (avail || [])
-            .filter((a: any) => a.specialty === spec)
-            .map(a => this.fb.group({
-              day:   [a.day,   Validators.required],
-              start: [a.start_time, Validators.required],
-              end:   [a.end_time,   Validators.required]
-            }))
-        );
-        return this.fb.group({
-          specialty: [spec],
-          times:     timesArray
-        });
-      }) || []
-    );
-
-    this.availabilityForm = this.fb.group({ slots });
+  // getter para el FormArray
+  get entries(): FormArray {
+    return this.scheduleForm.get('entries') as FormArray;
   }
 
-  get slots(): FormArray {
-    return this.availabilityForm.get('slots') as FormArray;
-  }
-
-    /** Devuelve el FormArray de franjas para el grupo i */
-  getTimes(groupIndex: number): FormArray {
-    return this.slots.at(groupIndex).get('times') as FormArray;
-  }
-
-
-  addSlot(groupIndex: number) {
-    const times = (this.slots.at(groupIndex).get('times') as FormArray);
-    times.push(this.fb.group({
-      day:   ['', Validators.required],
-      start: ['', Validators.required],
-      end:   ['', Validators.required]
+  addEntry(spec: string) {
+    this.entries.push(this.fb.group({
+      specialty: [spec],
+      day:       [this.days[0]],
+      from:      ['09:00'],
+      to:        ['17:00']
     }));
   }
 
-  removeSlot(groupIndex: number, slotIndex: number) {
-    const times = (this.slots.at(groupIndex).get('times') as FormArray);
-    times.removeAt(slotIndex);
+  removeEntry(i: number) {
+    this.entries.removeAt(i);
   }
 
-  async saveAvailability() {
-    if (this.availabilityForm.invalid) return;
-    const user = await this.auth.currentUser();
-    if (!user) return;
+  async saveSchedule() {
+    const list = this.entries.value.map((e: any) => ({
+      user_id:   this.profile.user_id,
+      specialty: e.specialty,
+      day:       e.day,
+      start_time: e.from,
+      end_time:   e.to
+    }));
 
-    // 3) Preparar payload
-    const all: any[] = [];
-    this.slots.controls.forEach(g => {
-      const spec = g.get('specialty')!.value;
-      (g.get('times') as FormArray).controls.forEach(t => {
-        all.push({
-          specialist_id: user.id,
-          specialty:     spec,
-          day:           t.get('day')!.value,
-          start_time:    t.get('start')!.value,
-          end_time:      t.get('end')!.value
-        });
-      });
-    });
+    const { error } = await this.supa
+      .from('horarios')
+      .upsert(list, { onConflict: 'user_id,specialty,day' });
 
-    // 4) Borrar anteriores y guardar nuevos
-    await this.supa
-      .from('availability')
-      .delete()
-      .eq('specialist_id', user.id);
-
-    const { error } = await this.supa.from('availability').insert(all);
     if (error) {
-      console.error('Error guardando disponibilidad', error);
-    } else {
-      console.log('Disponibilidad guardada');
+      console.error('Error guardando horarios →', error);
+      alert(`Error guardando horarios:\n${error.message}\n(Detail: ${error.details})`);
+      return;
     }
+    alert('Horarios guardados correctamente');
+  }
+
+  goBack() {
+    this.location.back();
   }
 }
