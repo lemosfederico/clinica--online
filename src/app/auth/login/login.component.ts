@@ -1,18 +1,23 @@
 // src/app/auth/login/login.component.ts
-import { Component, OnInit }          from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink }         from '@angular/router';
-import { CommonModule }               from '@angular/common';
-import { MatFormFieldModule }         from '@angular/material/form-field';
-import { MatInputModule }             from '@angular/material/input';
-import { MatButtonModule }            from '@angular/material/button';
-import { SupabaseService }            from '../../core/supabase.service';
-import { MatIconModule }              from '@angular/material/icon';
+import { Router, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule }     from '@angular/material/input';
+import { MatButtonModule }    from '@angular/material/button';
+import { MatIconModule }      from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Location } from '@angular/common';
+import { Location }           from '@angular/common';
+
+import { SupabaseService } from '../../core/supabase.service';
+import { ErrorService }    from '../../core/error.service';
 
 @Component({
   standalone: true,
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -22,111 +27,76 @@ import { Location } from '@angular/common';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule
-  ],
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  ]
 })
 export class LoginComponent implements OnInit {
   form!: FormGroup;
   loading = false;
   errorMessage = '';
-  email: any;
-  password: any;
+
+  quickUsers = [
+    { email: 'paciente@paciente.com',  password: '123456', role: 'paciente 1',      img: 'assets/perfiles/paciente1.jpg' },
+    { email: 'paciente2@paciente.com', password: '123456', role: 'paciente 2',      img: 'assets/perfiles/paciente2.jpg' },
+    { email: 'paciente3@paciente.com', password: '123456', role: 'paciente 3',      img: 'assets/perfiles/paciente3.jpg' },
+    { email: 'especialista1@especialista.com', password: '123456', role: 'especialista 1', img: 'assets/perfiles/especialista1.jpg' },
+    { email: 'especialista2@especialista.com', password: '123456', role: 'especialista 2', img: 'assets/perfiles/especialista2.jpg' },
+    { email: 'admin@admin.com',        password: '123456', role: 'admin',           img: 'assets/perfiles/admin.jpg' }
+  ];
 
   constructor(
     private fb: FormBuilder,
     private supa: SupabaseService,
+    private errorSvc: ErrorService,
     private router: Router,
     private location: Location
   ) {}
 
-  quickUsers = [
-  {
-    email: 'test@paciente.com',
-    password: '123456',
-    role: 'paciente 1',
-    img: 'assets/perfiles/paciente1.jpg'
-  },
-  {
-    email: 'test2@paciente.com',
-    password: '123456',
-    role: 'paciente 2',
-    img: 'assets/perfiles/paciente2.jpg'
-  },
-  {
-    email: 'federicoezequielemos09@gmail.com',
-    password: '123456',
-    role: 'paciente 3',
-    img: 'assets/perfiles/paciente3.jpg'
-  },
-  {
-    email: 'sopiye2457@jio1.com',
-    password: '123456',
-    role: 'especialista 1',
-    img: 'assets/perfiles/especialista1.jpg'
-  },
-  {
-    email: 'test@especialista.com',
-    password: '123456',
-    role: 'especialista 2',
-    img: 'assets/perfiles/especialista2.png'
-  },
-  {
-    email: 'admin@admin.com',
-    password: '123456',
-    role: 'admin',
-    img: 'assets/perfiles/admin.jpg'
+  ngOnInit() {
+    this.form = this.fb.group({
+      email:    ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]]
+    });
   }
-  ];
 
   usarUsuario(usr: any) {
     this.form.patchValue({
       email: usr.email,
       password: usr.password
     });
-}
-
-
-   goBack(): void {
-    this.location.back();
   }
 
-  ngOnInit() {
-    this.form = this.fb.group({
-      email:    ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required]
-    });
+  goBack(): void {
+    this.location.back();
   }
 
   async onSubmit() {
     if (this.form.invalid) return;
+
     this.loading = true;
     this.errorMessage = '';
 
     const { email, password } = this.form.value;
-    // Intento de login
-    const { data, error } = await this.supa.signIn(email, password);
+    // 1️⃣ Intento de login
+    const { data, error } = await this.supa.signIn(
+      email.trim().toLowerCase(),
+      password
+    );
     if (error) {
-      // Throttling u otros errores
-      if (error.message.includes('security')) {
-        this.errorMessage = 'Por seguridad, espera unos segundos antes de reintentar.';
-      } else {
-        this.errorMessage = error.message;
-      }
+      this.errorMessage = this.errorSvc.translate(error);
       this.loading = false;
       return;
     }
 
-    const user = data.user;
-    // 1) Verificar email confirmado
-    if (!user?.confirmed_at) {
-      this.errorMessage = 'Debes confirmar tu correo antes de ingresar.';
+    const user = data.user!;
+    // 2️⃣ Verificar email
+    if (!user.email_confirmed_at) {
+      this.errorMessage = this.errorSvc.translate({ message: 'Email not confirmed' });
       await this.supa.signOut();
       this.loading = false;
       return;
     }
 
+    // 3️⃣ Traer perfil
     const { data: profile, error: errProfile } = await this.supa
       .from('profiles')
       .select('role,approved')
@@ -134,37 +104,30 @@ export class LoginComponent implements OnInit {
       .single();
 
     if (errProfile || !profile) {
-      this.errorMessage = 'No se pudo obtener el perfil de usuario.';
+      this.errorMessage = this.errorSvc.translate(errProfile ?? { message: 'No se pudo obtener el perfil de usuario.' });
       this.loading = false;
       return;
     }
 
-
-    const { role, approved } = profile;
-    // 3) Si es especialista, debe estar aprobado
-    if (role === 'especialista' && !approved) {
+    // 4️⃣ Validar especialista
+    if (profile.role === 'especialista' && !profile.approved) {
       this.errorMessage = 'Tu cuenta de especialista está pendiente de aprobación.';
       await this.supa.signOut();
       this.loading = false;
       return;
     }
 
-    // 4) Redirigir según rol
+    // 5️⃣ Redirigir
     this.loading = false;
-    if (role === 'admin') {
-      this.router.navigateByUrl('/admin/users');
-    } else if (role === 'especialista') {
-      this.router.navigateByUrl('/especialista/mis-turnos');
-    } else {
-      this.router.navigateByUrl('/paciente/mis-turnos');
+    switch (profile.role) {
+      case 'admin':
+        this.router.navigateByUrl('/admin/users');
+        break;
+      case 'especialista':
+        this.router.navigateByUrl('/especialista/mis-turnos');
+        break;
+      default:
+        this.router.navigateByUrl('/paciente/mis-turnos');
     }
   }
-
-  // Accesos rápidos
-  /*quickLogin(email: string, pass: string) {
-    this.form.setValue({ email, password: pass });
-    this.onSubmit();
-  }*/
-
-  
 }

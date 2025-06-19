@@ -1,36 +1,23 @@
 <!-- src/app/turnos/solicitar-turno/solicitar-turno.component.html -->
 <div class="solicitar-turno-container">
-  <!-- Botón Volver -->
   <button mat-icon-button class="back-button" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
   </button>
-
   <h2 class="subtitle">Solicitar Turno</h2>
+
+  <mat-card class="form-card">
+  <mat-card-title>Solicitar Turno</mat-card-title>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
 
     <!-- Paciente (solo admin) -->
-    <mat-form-field appearance="outline" *ngIf="isAdmin" class="full-width">
+    <mat-form-field *ngIf="isAdmin" appearance="outline" class="full-width">
       <mat-label>Paciente*</mat-label>
       <mat-select formControlName="paciente">
         <mat-option *ngFor="let p of pacientes" [value]="p.user_id">
           {{ p.nombre }} {{ p.apellido }}
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="form.get('paciente')?.hasError('required')">
-        Debes seleccionar un paciente.
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Especialidad -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Especialidad*</mat-label>
-      <mat-select formControlName="especialidad">
-        <mat-option *ngFor="let s of specialidades" [value]="s">{{ s }}</mat-option>
-      </mat-select>
-      <mat-error *ngIf="form.get('especialidad')?.hasError('required')">
-        Debes seleccionar una especialidad.
-      </mat-error>
     </mat-form-field>
 
     <!-- Especialista -->
@@ -41,31 +28,36 @@
           {{ e.nombre }} {{ e.apellido }}
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="form.get('especialista')?.hasError('required')">
-        Debes seleccionar un especialista.
-      </mat-error>
     </mat-form-field>
 
-    <!-- Fecha -->
+    <!-- Especialidad -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Especialidad*</mat-label>
+      <mat-select formControlName="especialidad">
+        <mat-option *ngFor="let s of specialidades" [value]="s">
+          {{ s }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+  <!-- Fecha: sólo las fechas con horarios -->
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Fecha*</mat-label>
       <mat-select formControlName="fecha">
-        <mat-option *ngFor="let f of fechasProximos15" [value]="f.value">
+        <mat-option *ngFor="let f of availableDates" [value]="f.value">
           {{ f.label }}
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="form.get('fecha')?.hasError('required')">
-        Debes seleccionar una fecha.
-      </mat-error>
     </mat-form-field>
 
     <!-- Hora -->
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Hora*</mat-label>
-      <input matInput type="time" formControlName="hora">
-      <mat-error *ngIf="form.get('hora')?.hasError('required')">
-        Debes seleccionar una hora.
-      </mat-error>
+      <mat-select formControlName="hora" [disabled]="availableTimeSlots.length===0">
+        <mat-option *ngFor="let h of availableTimeSlots" [value]="h">
+          {{ h }}
+        </mat-option>
+      </mat-select>
     </mat-form-field>
 
     <div class="actions">
@@ -73,6 +65,7 @@
         Solicitar Turno
       </button>
     </div>
-
   </form>
+  
+  </mat-card>
 </div>

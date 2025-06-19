@@ -1,66 +1,117 @@
-<!-- Botón Volver -->
+<!-- src/app/mi-perfil/mi-perfil.component.html -->
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
 <ng-container *ngIf="!loading; else cargando">
-  <!-- Tarjeta con datos del perfil -->
   <mat-card class="profile-card">
     <mat-card-header>
-      <div mat-card-avatar class="avatar-container">
-        <img *ngFor="let url of profile.image_urls" [src]="url" class="avatar">
-      </div>
+      <img
+        mat-card-avatar
+        [src]="avatarUrl"
+        alt="Avatar de {{ profile.nombre }}"
+      />
       <mat-card-title>{{ profile.nombre }} {{ profile.apellido }}</mat-card-title>
       <mat-card-subtitle>{{ profile.role | titlecase }}</mat-card-subtitle>
     </mat-card-header>
-    <mat-card-content>
-      <p><strong>Edad:</strong> {{ profile.edad }}</p>
-      <p><strong>DNI:</strong> {{ profile.dni }}</p>
-    </mat-card-content>
   </mat-card>
 
-  <!-- Mis Horarios (solo especialistas) -->
   <section *ngIf="profile.role==='especialista'" class="horarios-section">
     <h2>Mis Horarios</h2>
-
-    <!-- FormGroup que envuelve el FormArray -->
     <form [formGroup]="scheduleForm">
-      <div *ngFor="let spec of profile.specialties">
+      <div *ngFor="let spec of profile.specialties" class="spec-block">
         <div class="spec-header">
           <h3>{{ spec }}</h3>
-          <button mat-mini-fab color="primary" (click)="addEntry(spec)">
+          <button mat-mini-fab color="primary" type="button" (click)="addEntry(spec)">
             <mat-icon>add</mat-icon>
           </button>
         </div>
-      </div>
 
-      <div formArrayName="entries">
-        <div *ngFor="let grp of entries.controls; let i = index" [formGroupName]="i" class="entry-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Día</mat-label>
-            <mat-select formControlName="day">
-              <mat-option *ngFor="let d of days" [value]="d">{{ d }}</mat-option>
-            </mat-select>
-          </mat-form-field>
+        <div formArrayName="entries">
+          <ng-container *ngFor="let grp of entries.controls; let i = index">
+            <ng-container *ngIf="grp.value.specialty === spec">
+              <div [formGroupName]="i" class="entry-row">
+                
+                <!-- Fecha -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Fecha</mat-label>
+                  <input
+                    matInput
+                    type="date"
+                    formControlName="date"
+                    [min]="minDate"
+                    [max]="maxDate"
+                  />
+                  <mat-error *ngIf="grp.get('date')?.hasError('required')">
+                    La fecha es obligatoria.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('date')?.hasError('beforeMin')">
+                    No puedes elegir una fecha anterior a hoy.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('date')?.hasError('afterMax')">
+                    Solo puedes elegir hasta {{ maxDate }}.
+                  </mat-error>
+                </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Desde</mat-label>
-            <input matInput type="time" formControlName="from">
-          </mat-form-field>
+                <!-- Desde -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Desde</mat-label>
+                  <input
+                    matInput
+                    type="time"
+                    formControlName="start_time"
+                    [min]="minTime"
+                    [max]="maxTime"
+                  />
+                  <mat-error *ngIf="grp.get('start_time')?.hasError('required')">
+                    La hora de inicio es obligatoria.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('start_time')?.hasError('beforeMinTime')">
+                    Debe ser a partir de {{ minTime }}.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('start_time')?.hasError('afterMaxTime')">
+                    No puede superar {{ maxTime }}.
+                  </mat-error>
+                </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Hasta</mat-label>
-            <input matInput type="time" formControlName="to">
-          </mat-form-field>
+                <!-- Hasta -->
+                <mat-form-field appearance="outline">
+                  <mat-label>Hasta</mat-label>
+                  <input
+                    matInput
+                    type="time"
+                    formControlName="end_time"
+                    [min]="minTime"
+                    [max]="maxTime"
+                  />
+                  <mat-error *ngIf="grp.get('end_time')?.hasError('required')">
+                    La hora de fin es obligatoria.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('end_time')?.hasError('beforeMinTime')">
+                    Debe ser a partir de {{ minTime }}.
+                  </mat-error>
+                  <mat-error *ngIf="grp.get('end_time')?.hasError('afterMaxTime')">
+                    No puede superar {{ maxTime }}.
+                  </mat-error>
+                </mat-form-field>
 
-          <button mat-icon-button color="warn" (click)="removeEntry(i)">
-            <mat-icon>delete</mat-icon>
-          </button>
+                <button mat-icon-button color="warn" type="button" (click)="removeEntry(i)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </ng-container>
+          </ng-container>
         </div>
       </div>
 
       <div class="actions">
-        <button mat-flat-button color="accent" (click)="saveSchedule()">
+        <button
+          mat-raised-button
+          color="accent"
+          type="button"
+          (click)="saveSchedule()"
+          [disabled]="scheduleForm.invalid || entries.length===0"
+        >
           Guardar Horarios
         </button>
       </div>

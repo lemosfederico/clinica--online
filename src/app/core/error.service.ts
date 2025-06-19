@@ -1,43 +1,57 @@
 // src/app/core/error.service.ts
 import { Injectable } from '@angular/core';
-import { PostgrestError } from '@supabase/supabase-js';
 
 @Injectable({ providedIn: 'root' })
 export class ErrorService {
-  /** Traduce un PostgrestError a un mensaje en castellano */
-  translate(error: PostgrestError): string {
-    if (!error) return 'Ha ocurrido un error inesperado';
+  /** Traduce errores de Auth y PostgREST a castellano */
+  translate(error: any): string {
+    const raw = error?.message ?? '';
+    const msg = raw.toLowerCase();
 
+    // — Errores de Auth (no tienen .code) —
+    if (!error?.code) {
+      if (msg.includes('Email not confirmed')) {
+        return 'El correo electrónico no ha sido confirmado.';
+      }
+      if (msg.includes('invalid email')) {
+        return 'Dirección de correo electrónico no válida.';
+      }
+      if (msg.includes('invalid login credentials') ||
+          msg.includes('invalid password') ||
+          msg.includes('invalid login')) {
+        return 'Correo o contraseña incorrectos.';
+      }
+      if (msg.includes('security')) {
+        return 'Por seguridad, espera unos segundos antes de reintentar.';
+      }
+      return 'Ha ocurrido un error de autenticación.';
+    }
+
+    // — Errores de PostgREST (tienen .code) —
     switch (error.code) {
-      case '23505':  // clave duplicada
-        if (error.message.includes('profiles_email_key')) {
+      case '23505':
+        // duplicados
+        if (raw.includes('profiles_email_key')) {
           return 'Ya existe un usuario con ese correo.';
         }
-        if (error.message.includes('profiles_pkey')) {
-          return 'El perfil ya existe.';
-        }
         return 'Ya existe un registro con esos datos.';
-      case '23503':  // violación FK
+      case '23503':
         return 'No se encontró el usuario asociado.';
       case '400':
         return 'Solicitud inválida. Verifica los datos ingresados.';
       case '422':
         return 'Formato de datos incorrecto.';
       default:
-        // Si no coincide un código conocido, devolvemos el mensaje original en castellano “aprox.”
-        return this.humanize(error.message);
+        return this.humanize(raw);
     }
   }
 
-/** Limpia mensajes técnicos y evita operar sobre undefined */
-  private humanize(msg: string | undefined): string {
-    if (typeof msg !== 'string' || !msg.trim()) {
-      return 'Ha ocurrido un error.';
-    }
-    return msg
+  private humanize(text: string): string {
+    return text
       .replace(/["\[\]]/g, '')
       .replace(/[_\-]/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim()
+      || 'Ha ocurrido un error.';
   }
 }

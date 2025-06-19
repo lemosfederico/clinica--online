@@ -8,13 +8,15 @@ import { MatFormFieldModule }      from '@angular/material/form-field';
 import { MatInputModule }          from '@angular/material/input';
 import { MatButtonModule }         from '@angular/material/button';
 import { MatCheckboxModule }       from '@angular/material/checkbox';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { RecaptchaModule, RecaptchaFormsModule } from 'ng-recaptcha';
 import { environment }             from '../../../../environments/environment';
 
 import { SupabaseService }         from '../../../core/supabase.service';
-import { RecaptchaModule, RecaptchaFormsModule } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
+  selector: 'app-especialista-register',
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -22,10 +24,10 @@ import { RecaptchaModule, RecaptchaFormsModule } from 'ng-recaptcha';
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
+    MatSnackBarModule,
     RecaptchaFormsModule,
     RecaptchaModule
   ],
-  selector: 'app-especialista-register',
   templateUrl: './especialista-register.component.html',
   styleUrls: ['./especialista-register.component.scss']
 })
@@ -35,7 +37,6 @@ export class EspecialistaRegisterComponent implements OnInit {
   error   = '';
   specialtyError = false;
 
-  // listado de especialidades predefinidas
   predefinedList = [
     { key: 'cardiologia',  label: 'Cardiología' },
     { key: 'dermatologia', label: 'Dermatología' },
@@ -46,8 +47,8 @@ export class EspecialistaRegisterComponent implements OnInit {
   form = this.fb.group({
     nombre:           ['', [Validators.required, Validators.minLength(3)]],
     apellido:         ['', [Validators.required, Validators.minLength(3)]],
-    edad:             [null, [Validators.required, Validators.min(18), Validators.max(120)]],
-    dni:              [null, [Validators.required,Validators.pattern(/^\d+$/),Validators.minLength(7),Validators.maxLength(9)]],
+    edad:             [null, [Validators.required, Validators.pattern(/^[0-9]+$/), Validators.min(18), Validators.max(120)]],
+    dni:              [null, [Validators.required, Validators.pattern(/^[0-9]+$/), Validators.minLength(7), Validators.maxLength(9)]],
     email:            ['', [Validators.required, Validators.email]],
     password:         ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword:  ['', [Validators.required]],
@@ -57,13 +58,13 @@ export class EspecialistaRegisterComponent implements OnInit {
       neurologia:   [false],
       pediatria:    [false]
     }),
-    customSpecialty:  [''],                    // opcional
+    customSpecialty:  [''],
     profileImage:     [null, [Validators.required]],
-    recaptcha:       ['', Validators.required]    // ≤ nuevo
+    recaptcha:        ['', [Validators.required]]
   }, {
-    validators: group => {
-      const p = group.get('password')!;
-      const c = group.get('confirmPassword')!;
+    validators: grp => {
+      const p = grp.get('password')!;
+      const c = grp.get('confirmPassword')!;
       return p.value === c.value ? null : { mismatch: true };
     }
   });
@@ -71,7 +72,8 @@ export class EspecialistaRegisterComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private supa: SupabaseService,
-    private router: Router
+    private router: Router,
+    private snack: MatSnackBar
   ) {}
 
   ngOnInit() {}
@@ -87,70 +89,68 @@ export class EspecialistaRegisterComponent implements OnInit {
     this.error   = '';
     this.specialtyError = false;
 
-    if (this.form.invalid) return;
-    const form = this.form.value;
-    console.log('⚙️ Payload para signup:', {
-    email: form.email,
-    password: form.password
-   });
-
-      
-    // armo el array de especialidades
-    const præ = this.form.value.predefinedSpecs as Record<string, boolean>;
+    // Armamos el array de especialidades
+    const pre = this.form.value.predefinedSpecs as Record<string, boolean>;
     const selected = this.predefinedList
-      .filter(s => præ[s.key])
+      .filter(s => pre[s.key])
       .map(s => s.label);
+
     const custom = (this.form.value.customSpecialty as string).trim();
     if (custom) selected.push(custom);
 
+    // Validamos al menos una
     if (selected.length === 0) {
       this.specialtyError = true;
       this.loading = false;
       return;
     }
 
-    const {
-      nombre, apellido, edad, dni,
-      email, password, profileImage
-    } = this.form.value;
-
-    // 1. signUp
-    const { data, error } = await this.supa.signUp(email!, password!);
-    if (error || !data.user) {
-      this.error = error?.message || 'Error al registrar usuario';
+    // 1️⃣ Registro en Auth
+    const { data: signUpData, error: signUpErr } = await this.supa.signUp(
+      this.form.value.email!,
+      this.form.value.password!
+    );
+    if (signUpErr || !signUpData.user) {
+      this.error = signUpErr?.message ?? 'Error al registrar usuario';
       this.loading = false;
       return;
     }
-    const userId = data.user.id;
+    const userId = signUpData.user.id;
 
-    // 2. upload profileImage
+    // 2️⃣ Subo imagen al bucket 'avatars'
     const bucket = this.supa.getStorage().from('avatars');
-    const file   = profileImage as unknown as File;
+    const file   = this.form.value.profileImage as unknown as File;
     const ext    = file.name.split('.').pop();
     const path   = `${userId}/profile.${ext}`;
-    await bucket.upload(path, file);
+    const { error: uploadErr } = await bucket.upload(path, file, { upsert: true });
+    if (uploadErr) {
+      this.error = uploadErr.message;
+      this.loading = false;
+      return;
+    }
     const { data: { publicUrl } } = bucket.getPublicUrl(path);
 
-    // 3. insert profile
-    const { error: err2 } = await this.supa.getClient()
+    // 3️⃣ Inserto el perfil con el array de specialties
+    const { error: insertErr } = await this.supa
       .from('profiles')
       .insert([{
         user_id:     userId,
         role:        'especialista',
-        nombre,
-        apellido,
-        edad,
-        dni,
+        nombre:      this.form.value.nombre,
+        apellido:    this.form.value.apellido,
+        edad:        this.form.value.edad,
+        dni:         this.form.value.dni,
         specialties: selected,
         image_urls:  [ publicUrl ]
       }]);
-    if (err2) {
-      this.error = err2.message;
+
+    if (insertErr) {
+      this.error = insertErr.message;
       this.loading = false;
       return;
     }
 
-    // 4. redirect
+    // 4️⃣ Éxito
     this.loading = false;
     this.router.navigateByUrl('/login');
   }

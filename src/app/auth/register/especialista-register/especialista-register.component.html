@@ -1,40 +1,40 @@
-<!-- Registro de Especialista -->
+<!-- src/app/auth/register/especialista-register/especialista-register.component.html -->
 <div class="register-container">
-
- <p class="subtitle">Registro de Especialista</p>
+  <p class="subtitle">Registro de Especialista</p>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-grid">
 
-    <!-- Nombre y Apellido (2 columnas) -->
+    <!-- Nombre y Apellido -->
     <mat-form-field appearance="outline">
       <mat-label>Nombre*</mat-label>
       <input matInput formControlName="nombre" />
       <mat-error *ngIf="form.get('nombre')?.hasError('required')">Requerido</mat-error>
     </mat-form-field>
-
     <mat-form-field appearance="outline">
       <mat-label>Apellido*</mat-label>
       <input matInput formControlName="apellido" />
       <mat-error *ngIf="form.get('apellido')?.hasError('required')">Requerido</mat-error>
     </mat-form-field>
 
-    <!-- Edad y DNI (2 columnas) -->
+    <!-- Edad y DNI -->
     <mat-form-field appearance="outline">
       <mat-label>Edad*</mat-label>
       <input matInput type="number" formControlName="edad" />
       <mat-error *ngIf="form.get('edad')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('edad')?.hasError('min')">≥ 18 años</mat-error>
-      <mat-error *ngIf="form.get('edad')?.hasError('max')">≤ 120 años</mat-error>
+      <mat-error *ngIf="form.get('edad')?.hasError('pattern')">Sólo números</mat-error>
+      <mat-error *ngIf="form.get('edad')?.hasError('min')">Debe ser ≥18</mat-error>
+      <mat-error *ngIf="form.get('edad')?.hasError('max')">Debe ser ≤120</mat-error>
     </mat-form-field>
-
     <mat-form-field appearance="outline">
       <mat-label>DNI*</mat-label>
       <input matInput formControlName="dni" />
       <mat-error *ngIf="form.get('dni')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('dni')?.hasError('pattern')">Solo números</mat-error>
+      <mat-error *ngIf="form.get('dni')?.hasError('pattern')">Sólo números</mat-error>
+      <mat-error *ngIf="form.get('dni')?.hasError('minlength')">Mín 7 dígitos</mat-error>
+      <mat-error *ngIf="form.get('dni')?.hasError('maxlength')">Máx 9 dígitos</mat-error>
     </mat-form-field>
 
-    <!-- Email (full width) -->
+    <!-- Email -->
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Email*</mat-label>
       <input matInput formControlName="email" />
@@ -42,35 +42,39 @@
       <mat-error *ngIf="form.get('email')?.hasError('email')">Formato inválido</mat-error>
     </mat-form-field>
 
-    <!-- Contraseña / Confirmar contraseña (2 columnas) -->
+    <!-- Contraseña -->
     <mat-form-field appearance="outline">
       <mat-label>Contraseña*</mat-label>
       <input matInput type="password" formControlName="password" />
       <mat-error *ngIf="form.get('password')?.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
+      <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mín 6 caracteres</mat-error>
     </mat-form-field>
-
     <mat-form-field appearance="outline">
-      <mat-label>Confirmar Contraseña*</mat-label>
+      <mat-label>Confirmar*</mat-label>
       <input matInput type="password" formControlName="confirmPassword" />
-      <mat-error *ngIf="form.hasError('mismatch')">No coinciden</mat-error>
+      <mat-error *ngIf="form.hasError('mismatch')">Las contraseñas no coinciden</mat-error>
     </mat-form-field>
 
-    <!-- Especialidades (full width) -->
+    <!-- Especialidades predefinidas -->
     <fieldset class="full-width">
-      <legend>Especialidades</legend>
-      <div class="specs">
+      <legend>Especialidades*</legend>
+      <div formGroupName="predefinedSpecs" class="specs">
         <mat-checkbox *ngFor="let s of predefinedList" [formControlName]="s.key">
           {{ s.label }}
         </mat-checkbox>
       </div>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Otra especialidad (opcional)</mat-label>
-        <input matInput formControlName="customSpecialty" />
-      </mat-form-field>
+      <mat-error *ngIf="specialtyError">
+        Debes seleccionar al menos una especialidad (o escribir una).
+      </mat-error>
     </fieldset>
 
-    <!-- Imagen de Perfil (full width) -->
+    <!-- Otra especialidad -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Otra especialidad (opcional)</mat-label>
+      <input matInput formControlName="customSpecialty" />
+    </mat-form-field>
+
+    <!-- Imagen de Perfil -->
     <div class="file-input full-width">
       <label>Imagen de Perfil*</label>
       <input type="file" (change)="onFileChange($event)" />
@@ -79,7 +83,7 @@
       </div>
     </div>
 
-    <!-- reCAPTCHA (full width) -->
+    <!-- reCAPTCHA -->
     <div class="full-width">
       <re-captcha formControlName="recaptcha" [siteKey]="siteKey"></re-captcha>
       <div class="error" *ngIf="form.get('recaptcha')?.hasError('required')">
@@ -87,12 +91,11 @@
       </div>
     </div>
 
-    <!-- Botón Registrar (full width) -->
+    <!-- Botón Registrar -->
     <div class="full-width actions">
       <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading">
         {{ loading ? 'Registrando…' : 'Registrar Especialista' }}
       </button>
     </div>
-
   </form>
 </div>
