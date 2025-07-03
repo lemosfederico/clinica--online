@@ -6,4 +6,9 @@
   </div>
 </div>
 
-<router-outlet></router-outlet>
+<main
+  [@slideInAnimation]="prepareRoute(outlet)"
+  [@fadeAnimation]="prepareRoute(outlet)"
+>
+  <router-outlet #outlet="outlet"></router-outlet>
+</main>

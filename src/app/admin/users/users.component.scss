@@ -1,21 +1,200 @@
+@use 'src/styles' as *;
+@use '@angular/material' as mat;
+
+/* --------------------------------------------------
+   Variables (originales + glassmorphism)
+-------------------------------------------------- */
+$primary:    #3f51b5;
+$accent:     #e91e63;
+$bg:         #f9fafa;
+$white:      #ffffff;
+$radius:     8px;
+$space:      16px;
+$font-h:     'Montserrat', sans-serif;
+$font-b:     'Roboto', sans-serif;
+
+// Variables para el efecto transparente + blur
+$card-bg:        rgba(255, 255, 255, 0.75);
+$backdrop-blur:  12px;
+
+/* --------------------------------------------------
+   Host & Reset con glassmorphism
+-------------------------------------------------- */
+:host {
+  display: block;
+  padding: $space;
+  font-family: $font-b;
+  color: #333;
+  
+  background-color: $card-bg !important;
+  backdrop-filter: blur($backdrop-blur);
+  border-radius: $radius;
+}
+
+/* --------------------------------------------------
+   Utility
+-------------------------------------------------- */
+.full-width {
+  width: 100%;
+}
+
+/* --------------------------------------------------
+   Botón Back
+-------------------------------------------------- */
+.header-back {
+  margin-bottom: $space / 2;
+
+  .back-button {
+    background: $card-bg !important;
+    backdrop-filter: blur($backdrop-blur);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: $radius;
+  }
+}
+
+/* --------------------------------------------------
+   Cabecera principal
+-------------------------------------------------- */
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space;
+
+  h2 {
+    margin: 0;
+    font-family: $font-h;
+    font-size: 1.5rem;
+    color: #222;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: $space / 2;
+
+    button {
+      font-family: $font-b;
+      font-weight: 500;
+      text-transform: none;
+      .mat-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+/* --------------------------------------------------
+   Tarjeta contenedor de la tabla con glassmorphism
+-------------------------------------------------- */
+.users-card {
+  background-color: $card-bg !important;
+  backdrop-filter: blur($backdrop-blur);
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: $space;
+
+  mat-card-content {
+    padding: 0;
+  }
+}
+
+/* --------------------------------------------------
+   Tabla estilizada (glass + estilo D)
+-------------------------------------------------- */
+.table-container {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 $space / 2;
+  background: transparent; // deja ver el fondo glass de .users-card
+
+  thead th.mat-header-cell {
+    background: $primary;
+    color: $white;
+    padding: $space / 2 $space;
+    font-family: $font-h;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  tbody tr.mat-row {
+    background: transparent; // deja ver el efecto
+    transition: background .2s, box-shadow .2s;
+
+    &:nth-child(even) {
+      background: rgba(255,255,255,0.85);
+    }
+
+    &:hover {
+      background: $card-bg;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      cursor: default;
+    }
+
+    td.mat-cell {
+      padding: $space / 2 $space;
+      border-bottom: none;
+    }
+  }
+}
+
+/* --------------------------------------------------
+   Celda de usuario (avatar + nombre)
+-------------------------------------------------- */
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: $space / 2;
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .user-name {
+    font-weight: 500;
+    color: #333;
+  }
+}
+
+/* --------------------------------------------------
+   Formulario de creación con glassmorphism
+-------------------------------------------------- */
+.form-container {
+  background-color: $card-bg !important;
+  backdrop-filter: blur($backdrop-blur);
+  border-radius: $radius;
+  padding: $space;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-top: $space;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  align-items: center;
+  gap: $space;
 }
 
- .back-button {
-    position: auto;
-    top: 5px;
-    left: 5x;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s;
+/* --------------------------------------------------
+   Botones de acciones
+-------------------------------------------------- */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space;
 
-    &:hover {
-      background: rgba(255, 255, 255, 1);
-    }
-
+  button {
+    text-transform: none;
   }
+}

@@ -1,0 +1,13 @@
+<mat-card>
+  <mat-card-title>Mis Pacientes Atendidos</mat-card-title>
+  <mat-card-content>
+    <mat-list>
+      <mat-list-item *ngFor="let p of pacientes">
+        {{ p.nombre }} {{ p.apellido }}
+        <button mat-button color="primary" (click)="verHistoria(p)">
+          Ver Historia
+        </button>
+      </mat-list-item>
+    </mat-list>
+  </mat-card-content>
+</mat-card>

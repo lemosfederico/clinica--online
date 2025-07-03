@@ -1,0 +1,29 @@
+<!-- src/app/especialista/paciente-detalle/paciente-detalle.component.html -->
+
+<mat-dialog-content class="dialog-container">
+  <div class="dialog-header">
+    <h2 class="dialog-title">
+      Turnos Realizados de {{ data.paciente.nombre }} {{ data.paciente.apellido }}
+    </h2>
+    <button mat-icon-button (click)="close()" class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-list *ngIf="turnos.length; else noTurnos">
+    <mat-list-item *ngFor="let t of turnos" class="turno-item">
+      <div mat-line class="turno-info">
+        {{ t.fecha | date:'dd/MM/yyyy' }} — {{ t.hora }}
+        <span class="especialidad">({{ t.especialidad }})</span>
+      </div>
+      <button mat-button color="primary" (click)="verResena(t)">
+        <mat-icon>rate_review</mat-icon>
+        Ver Reseña
+      </button>
+    </mat-list-item>
+  </mat-list>
+
+  <ng-template #noTurnos>
+    <p class="empty">No hay turnos finalizados para este paciente.</p>
+  </ng-template>
+</mat-dialog-content>

@@ -1,51 +1,57 @@
 <!-- src/app/admin/users/users.component.html -->
 
 <!-- Botón Volver -->
-<button mat-icon-button class="back-button" (click)="goBack()">
-  <mat-icon>arrow_back</mat-icon>
-</button>
-
-<div class="actions-bar">
-  <!-- Ya tenías tu título -->
-  <h2>Gestión de Usuarios</h2>
-
-  <!-- Nuevo botón Turnos -->
-  <button
-    mat-flat-button
-    color="primary"
-    routerLink="/turnos"
-    style="margin-left: auto;"
-  >
-    <mat-icon>schedule</mat-icon>
-    Turnos
+<div class="header-row1">
+  <button mat-icon-button class="back-button" (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
   </button>
 </div>
 
+
+<div class="header-main">
+  <h2>Gestión de Usuarios</h2>
+  <div class="header-actions">
+    <button mat-flat-button color="primary" routerLink="/turnos">
+      <mat-icon>schedule</mat-icon>
+      Turnos
+    </button>
+    
+    <button mat-raised-button color="accent" (click)="exportUsers()">
+      <mat-icon>grid_on</mat-icon>
+      Exportar todos los Usuarios
+    </button>
+
+        <!-- Nuevo botón Estadísticas -->
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="goToStats()"
+    >
+      <mat-icon>bar_chart</mat-icon>
+      Estadísticas
+    </button>
+  </div>
+</div>
+
+<mat-card class="users-card">
+<mat-card-content>
+<!-- Tabla de Usuarios -->
 <table mat-table [dataSource]="profiles" class="mat-elevation-z8 full-width">
-  <!-- Fotos -->
-  <ng-container matColumnDef="photos">
-    <th mat-header-cell *matHeaderCellDef>Avatar</th>
+
+  <!-- Usuario: avatar + nombre/apellido -->
+  <ng-container matColumnDef="usuario">
+    <th mat-header-cell *matHeaderCellDef>Usuario</th>
     <td mat-cell *matCellDef="let p">
-      <div class="photos-cell">
-        <img 
-          *ngFor="let url of p.image_urls" 
-          [src]="url" 
-          width="40" 
-          class="avatar">
+      <div class="user-cell">
+        <img
+          [src]="p.image_urls[0]"
+          (error)="onAvatarError($event)"
+          class="avatar"
+          alt="Avatar {{ p.nombre }}"
+        />
+        <span class="user-name">{{ p.nombre }} {{ p.apellido }}</span>
       </div>
     </td>
-  </ng-container>
-
-  <!-- Nombre -->
-  <ng-container matColumnDef="nombre">
-    <th mat-header-cell *matHeaderCellDef>Nombre</th>
-    <td mat-cell *matCellDef="let p">{{ p.nombre }}</td>
-  </ng-container>
-
-  <!-- Apellido -->
-  <ng-container matColumnDef="apellido">
-    <th mat-header-cell *matHeaderCellDef>Apellido</th>
-    <td mat-cell *matCellDef="let p">{{ p.apellido }}</td>
   </ng-container>
 
   <!-- Edad -->
@@ -60,11 +66,18 @@
     <td mat-cell *matCellDef="let p">{{ p.dni }}</td>
   </ng-container>
 
-  <!-- Email -->
-  <ng-container matColumnDef="email">
-    <th mat-header-cell *matHeaderCellDef>Email</th>
-    <td mat-cell *matCellDef="let p">{{ p.email }}</td>
+  <!-- Obra Social -->
+  <ng-container matColumnDef="obra_social">
+    <th mat-header-cell *matHeaderCellDef>Obra Social</th>
+    <td mat-cell *matCellDef="let p">{{ p.obra_social || '—' }}</td>
   </ng-container>
+
+  <!-- Especialidad -->
+  <ng-container matColumnDef="especialidad">
+    <th mat-header-cell *matHeaderCellDef>Especialidad</th>
+    <td mat-cell *matCellDef="let p">{{ p.specialties || '—' }}</td>
+  </ng-container>
+
 
   <!-- Rol -->
   <ng-container matColumnDef="role">
@@ -78,12 +91,11 @@
     <td mat-cell *matCellDef="let p">{{ p.approved ? 'Sí' : 'No' }}</td>
   </ng-container>
 
-  <!-- Acciones -->
+  <!-- Acciones: descarga solo pacientes -->
   <ng-container matColumnDef="actions">
     <th mat-header-cell *matHeaderCellDef>Acciones</th>
     <td mat-cell *matCellDef="let p">
-      <!-- Solo especialistas pueden aprobar o revocar -->
-      <button
+        <button
         *ngIf="p.role === 'especialista'"
         mat-button
         color="primary"
@@ -91,18 +103,46 @@
       >
         {{ p.approved ? 'Revocar' : 'Aprobar' }}
       </button>
+      <button
+        *ngIf="p.role === 'paciente'"
+        mat-icon-button
+        color="primary"
+        matTooltip="Descargar Turnos Realizados"
+        (click)="exportUserTurns(p)"
+      >
+        <mat-icon>file_download</mat-icon>
+      </button>
     </td>
   </ng-container>
 
-  <tr mat-header-row *matHeaderRowDef="columns"></tr>
-  <tr mat-row        *matRowDef="let row; columns: columns;"></tr>
+  <!-- Filas -->
+  <tr
+    mat-header-row
+    *matHeaderRowDef="[
+      'usuario','edad','dni','obra_social',
+      'especialidad','role','approved','actions'
+    ]"
+  ></tr>
+  <tr
+    mat-row
+    *matRowDef="let row; columns: [
+      'usuario','edad','dni','obra_social',
+      'especialidad','role','approved','actions'
+    ]"
+  ></tr>
 </table>
 
+</mat-card-content>
+</mat-card>
 <hr />
 
+<!-- Formulario de creación de usuario -->
 <h3>Crear Nuevo Usuario</h3>
-<form [formGroup]="creatingForm" (ngSubmit)="onSubmit()" class="form-container">
-
+<form
+  [formGroup]="creatingForm"
+  (ngSubmit)="onSubmit()"
+  class="form-container"
+>
   <div class="form-grid">
     <!-- Nombre -->
     <mat-form-field appearance="outline">
@@ -145,7 +185,7 @@
         El DNI es obligatorio.
       </mat-error>
       <mat-error *ngIf="creatingForm.get('dni')?.hasError('pattern')">
-        El DNI debe contener sólo números.
+        El DNI debe contener solo números.
       </mat-error>
       <mat-error *ngIf="creatingForm.get('dni')?.hasError('minlength')">
         Debe tener al menos 7 dígitos.
@@ -163,11 +203,11 @@
         El correo es obligatorio.
       </mat-error>
       <mat-error *ngIf="creatingForm.get('email')?.hasError('email')">
-        El formato debe ser: usuario&#64;dominio.com.
+        El formato debe ser usuario&#64;dominio.com.
       </mat-error>
     </mat-form-field>
 
-    <!-- Password -->
+    <!-- Contraseña -->
     <mat-form-field appearance="outline">
       <mat-label>Contraseña*</mat-label>
       <input matInput type="password" formControlName="password" />
@@ -183,7 +223,7 @@
     <mat-form-field appearance="outline">
       <mat-label>Rol*</mat-label>
       <mat-select formControlName="role">
-        <mat-option value="especialista">Especialista</mat-option>
+        <mat-option value="paciente">Paciente</mat-option>
         <mat-option value="admin">Administrador</mat-option>
       </mat-select>
       <mat-error *ngIf="creatingForm.get('role')?.hasError('required')">
@@ -193,22 +233,23 @@
 
     <!-- Avatar -->
     <div class="avatar-upload">
-      <label>Avatar</label><br/>
+      <label>Avatar</label><br />
       <input type="file" (change)="onFileChange($event)" />
-      <mat-error *ngIf="avatarError">
-        {{ avatarError }}
-      </mat-error>
+      <mat-error *ngIf="avatarError">{{ avatarError }}</mat-error>
     </div>
   </div>
 
-  <!-- Botón y mensaje de error general -->
   <div class="actions">
-    <button mat-raised-button color="primary" type="submit" [disabled]="uploading">
+    <button
+      mat-raised-button
+      color="primary"
+      type="submit"
+      [disabled]="uploading"
+    >
       {{ uploading ? 'Creando...' : 'Crear Usuario' }}
     </button>
     <mat-error *ngIf="errorMessage" class="full-width">
       {{ errorMessage }}
     </mat-error>
   </div>
-
 </form>

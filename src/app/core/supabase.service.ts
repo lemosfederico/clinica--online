@@ -13,7 +13,7 @@ import { ErrorService } from './error.service';
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
-  private supabase: SupabaseClient;
+  public supabase: SupabaseClient;
   private _session = new BehaviorSubject<Session | null>(null);
   readonly session$ = this._session.asObservable();
 
@@ -190,4 +190,123 @@ export class SupabaseService {
 
     return user;
   }
-}
+
+  async upsertHistoria(hist: {
+    turno_id:    number;
+    paciente_id: string;
+    altura:      number;
+    peso:        number;
+    temperatura: number;
+    presion:     string;
+    detalles:    { clave: string; valor: string }[];
+  }): Promise<{ error: string | null }> {
+    const client = this.getClient();
+
+    // 1) Hacemos upsert con onConflict('turno_id')
+    const { data: upData, error: upErr } = await client
+      .from('historia_clinica')
+      .upsert(
+        {
+          turno_id:    hist.turno_id,
+          paciente_id: hist.paciente_id,
+          altura:      hist.altura,
+          peso:        hist.peso,
+          temperatura: hist.temperatura,
+          presion:     hist.presion
+        },
+        { onConflict: 'turno_id' } as any   // TS workaround
+      )
+      .select('id')
+      .single();
+
+    if (upErr) {
+      console.error('[Supabase] upsertHistoria.upErr', upErr);
+      return { error: this.errorService.translate(upErr) };
+    }
+
+    const historiaId = upData.id;
+
+    // 2) Borramos todos los detalles viejos
+    const { error: delErr } = await client
+      .from('historia_detalles')
+      .delete()
+      .eq('historia_id', historiaId);
+
+    if (delErr) {
+      console.error('[Supabase] upsertHistoria.delErr', delErr);
+      return { error: this.errorService.translate(delErr) };
+    }
+
+    // 3) Insertamos los nuevos detalles
+    if (hist.detalles.length) {
+      const rows = hist.detalles.map(d => ({
+        historia_id: historiaId,
+        clave:       d.clave,
+        valor:       d.valor
+      }));
+      const { error: insDetErr } = await client
+        .from('historia_detalles')
+        .insert(rows);
+
+      if (insDetErr) {
+        console.error('[Supabase] upsertHistoria.insDetErr', insDetErr);
+        return { error: this.errorService.translate(insDetErr) };
+      }
+    }
+
+    return { error: null };
+  }
+
+  async getHistoriaByPaciente(pacienteId: string): Promise<{
+    data: {
+      id: string;
+      paciente_id: string;
+      altura: number;
+      peso: number;
+      temperatura: number;
+      presion: string;
+      fecha_creacion: string;
+      historia_detalles: { clave: string; valor: string }[];
+    } | null;
+    error: string | null;
+  }> {
+    // Usamos maybeSingle() para que 0 filas no sea error
+    const { data, error }: {
+      data: any | null;
+      error: PostgrestError | null;
+    } = await this.getClient()
+      .from('historia_clinica')
+      .select(`
+        id,
+        paciente_id,
+        altura,
+        peso,
+        temperatura,
+        presion,
+        fecha_creacion,
+        historia_detalles (clave, valor)
+      `)
+      .eq('paciente_id', pacienteId)
+      .maybeSingle();    // <-- aquí
+
+    if (error) {
+      console.error('[Supabase] getHistoriaByPaciente error:', error);
+      // traducimos y devolvemos mensaje
+      return { data: null, error: this.errorService.translate(error) };
+    }
+
+    // data será null si no existe historia; no es un error
+    return { data, error: null };
+  }
+    // en supabase.service.ts
+  async getProfile(userId: string) {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('nombre,apellido')
+      .eq('user_id', userId)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+  }
+

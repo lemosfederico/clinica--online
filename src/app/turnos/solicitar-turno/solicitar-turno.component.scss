@@ -3,21 +3,11 @@
 @use '@angular/material' as mat;
 
 
-
 .solicitar-turno-container {
+  max-width: 800px;
+  margin: 24px auto;
   position: relative;
-  max-width: 600px;
-  margin: 2rem auto;
-  background: #f7fefe;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-
-  h2 {
-    text-align: center;
-    margin: 0 0 1rem;
-    font-size: 1.5rem;
-  }
+  padding: 0 16px;
 }
 
 .back-button {
@@ -39,34 +29,222 @@
   }
 }
 
-
-.form-container {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-.full-width {
-  width: 100%;
-}
-
-mat-form-field {
-  width: 100%;
-}
-
-button[mat-raised-button] {
-  width: 100%;
-  padding: 0.75rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
 .subtitle {
-  margin: 0;
-  font-size: 1.8rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.form-card {
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.step-container {
+  margin-top: 24px;
+}
+
+.step-container h3 {
+  margin-bottom: 12px;
   font-weight: 600;
 }
+
+/* Grid genérico para los 3 pasos */
+.grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+/* Botones rectangulares con efecto hover */
+.grid-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  min-height: 140px;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.grid-buttons button:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+/* Imagen circular centrada */
+.grid-buttons img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+/* Texto debajo de la imagen */
+.grid-buttons .label,
+.grid-buttons .name {
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* Botón seleccionado */
+.grid-buttons button.selected {
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 2px rgba(63,81,181,0.3);
+}
+
+/* Área del botón “Solicitar Turno” */
+.actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+/* src/app/turnos/solicitar-turno/solicitar-turno.component.scss */
+
+/* ---------------------------------------- *
+ * Paso 1: botones de especialidad en rect. *
+ * ---------------------------------------- */
+.spec-button {
+  border-radius: 0;                    // borde 90º
+  border: 2px solid #3f51b5;          // borde destacable
+  background-color: #e8eaf6;          // fondo suave
+  padding: 16px;                      // espacio interno
+  min-height: 140px;                  // altura mínima
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .2s, transform .2s;
+}
+
+.spec-button:hover {
+  background-color: #c5cae9;
+  transform: translateY(-2px);
+}
+
+.spec-button img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* dentro de solicitar-turno.component.scss */
+
+/* estilos generales para los botones de horario */
+.slot-button {
+  border: 2px solid #ff5722;            // borde naranja más grueso
+  background-color: #fff3e0;            // fondo suave crema
+  border-radius: 12px;                  // esquinas ligeramente redondeadas
+  min-height: 120px;                    // más alto
+  padding: 16px;                        // espacio interior
+  font-size: 1.1rem;                    // texto más grande
+  font-weight: 500;                     // ligeramente más pesado
+  color: #bf360c;                       // texto naranja oscuro
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 
+    background-color .2s, 
+    transform .2s,
+    box-shadow .2s;
+}
+
+/* efecto hover */
+.slot-button:hover {
+  background-color: #ffe0b2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* estado seleccionado */
+.slot-button.selected {
+  background-color: #ffcc80;
+  border-color: #e64a19;
+  box-shadow: 0 0 0 3px rgba(230,74,25,0.4);
+}
+
+/* ajusta el grid para que no queden tan compactos */
+.grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px;
+}
+
+/* media query para pantallas pequeñas */
+@media (max-width: 600px) {
+  .slot-button {
+    min-height: 100px;
+    padding: 12px;
+    font-size: 1rem;
+  }
+  .grid-buttons {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+}
+
+
+
+/* Ajustes para móviles */
+@media (max-width: 600px) {
+  .grid-buttons {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  .grid-buttons button {
+    min-height: 100px;
+    padding: 8px;
+  }
+  .grid-buttons img {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 4px;
+  }
+}
+
+
+
+.patient-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+/* tarjetas pequeñitas y auto-ancho */
+.patient-card {
+  flex: auto;
+  width: 100px;
+  padding: 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.patient-card.selected {
+  border-color: #3f51b5;
+}
+/* avatar más chico */
+.patient-card img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+/* nombre más pequeño */
+.patient-card .name {
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* ya tienes tus otros estilos aquí abajo... */

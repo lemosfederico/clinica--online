@@ -1,0 +1,36 @@
+<!-- src/app/paciente/mi-perfil-paciente/mi-perfil-paciente.component.html -->
+
+<button mat-icon-button class="back-button" (click)="goBack()">
+  <mat-icon>arrow_back</mat-icon>
+</button>
+
+<ng-container *ngIf="historia; else noData">
+  <mat-card class="perfil-card">
+    <mat-card-title>Mi Historia Clínica</mat-card-title>
+    <mat-card-content>
+      <p><strong>Altura:</strong> {{ historia.altura }} cm</p>
+      <p><strong>Peso:</strong> {{ historia.peso }} kg</p>
+      <p><strong>Temperatura:</strong> {{ historia.temperatura }} °C</p>
+      <p><strong>Presión:</strong> {{ historia.presion }}</p>
+
+      <ng-container *ngIf="historia.historia_detalles.length">
+        <h4>Detalles adicionales</h4>
+        <ul>
+          <li *ngFor="let d of historia.historia_detalles">
+            {{ d.clave }}: {{ d.valor }}
+          </li>
+        </ul>
+      </ng-container>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" (click)="downloadPDF()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Descargar PDF
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</ng-container>
+
+<ng-template #noData>
+  <p>No hay historia clínica disponible para este turno.</p>
+</ng-template>

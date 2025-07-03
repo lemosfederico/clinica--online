@@ -1,40 +1,123 @@
 @use 'src/styles' as *;
 @use '@angular/material' as mat;
 
-
-.actions-bar {
-  margin-bottom: 1rem;
+/* --------------------------------------------------
+   Host & Layout
+-------------------------------------------------- */
+:host {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  background: white;
+  gap: 16px;
 }
 
+/* --------------------------------------------------
+   Back Button (header-back)
+-------------------------------------------------- */
+.header-back {
+  margin-bottom: 16px;
+
+  .back-button {
+    background: mat.get-color-from-palette($clinica--online-primary, 100);
+    color: mat.get-color-from-palette($clinica--online-primary, 900);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: background .2s;
+
+    &:hover {
+      background: mat.get-color-from-palette($clinica--online-primary, 200);
+    }
+
+    mat-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+/* --------------------------------------------------
+   Toolbar & Actions Bar
+-------------------------------------------------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  mat-form-field {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* --------------------------------------------------
+   Utility Classes
+-------------------------------------------------- */
 .full-width {
   width: 100%;
 }
 
-.mat-form-field {
-  width: 300px;
+/* --------------------------------------------------
+   Table Container & Table (Estilo D)
+-------------------------------------------------- */
+.table-container {
+  overflow-x: auto;
 }
 
+table.app-table,
 table {
   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
 }
 
-.back-button {
-  position: auto;
-  top: auto;
-  left: auto;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s;
+th,
+td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+thead th {
+  font-weight: 600;
+  color: white;
+  background: mat.get-color-from-palette($clinica--online-primary, 100);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+tbody tr {
+  background: mat.get-color-from-palette($clinica--online-primary, 50);
+  transition: background .2s, box-shadow .2s;
+
+  &:nth-child(even) {
+    background: lighten(mat.get-color-from-palette($clinica--online-primary, 50), 5%);
+  }
 
   &:hover {
-    background: rgba(255, 255, 255, 1);
+    background: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    cursor: default;
   }
+}
 
-  mat-icon {
-    color: mat.get-color-from-palette($clinica--online-primary, 800);
-    font-size: 24px;
-  }
+/* --------------------------------------------------
+   Override legacy back-button if needed
+-------------------------------------------------- */
+.back-button {
+  background: mat.get-color-from-palette($clinica--online-primary, 100) !important;
+  color: mat.get-color-from-palette($clinica--online-primary, 900) !important;
 }

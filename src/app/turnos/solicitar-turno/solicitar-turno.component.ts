@@ -1,35 +1,31 @@
 // src/app/turnos/solicitar-turno/solicitar-turno.component.ts
+
 import { Component, OnInit }              from '@angular/core';
 import { CommonModule }                   from '@angular/common';
-import {
-  ReactiveFormsModule,
-  FormBuilder,
-  FormGroup,
-  Validators
-} from '@angular/forms';
-import { MatFormFieldModule }             from '@angular/material/form-field';
-import { MatInputModule }                 from '@angular/material/input';
-import { MatSelectModule }                from '@angular/material/select';
-import { MatButtonModule }                from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule, Router }           from '@angular/router';
 import { Location }                       from '@angular/common';
 import { MatIconModule }                  from '@angular/material/icon';
 import { MatCardModule }                  from '@angular/material/card';
+import { MatButtonModule }                from '@angular/material/button';
+import { MatFormFieldModule }             from '@angular/material/form-field';
+import { MatSelectModule }                from '@angular/material/select';
 
 import { SupabaseService }                from '../../core/supabase.service';
 import { AuthService }                    from '../../core/auth.service';
 
 interface Perfil {
-  user_id:  string;
-  nombre:   string;
-  apellido: string;
+  user_id:   string;
+  nombre:    string;
+  apellido:  string;
+  image_urls?: string[];
+  role?:     string;
 }
 
-// Para el select de fechas con disponibilidad
-interface DateOption {
-  value: string; // "YYYY-MM-DD"
-  label: string; // "DD/MM/YYYY"
+interface WeeklyScheduleRaw {
+  dia_semana: number;   // 0=Domingo … 6=Sábado
+  desde:      string;   // "HH:mm"
+  hasta:      string;   // "HH:mm"
 }
 
 @Component({
@@ -37,267 +33,239 @@ interface DateOption {
   selector: 'app-solicitar-turno',
   imports: [
     CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
     MatSnackBarModule,
     RouterModule,
     MatIconModule,
-    MatCardModule
+    MatCardModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatSelectModule
   ],
   templateUrl: './solicitar-turno.component.html',
   styleUrls: ['./solicitar-turno.component.scss']
 })
 export class SolicitarTurnoComponent implements OnInit {
-  form: FormGroup;
-
-  especialistas: Perfil[] = [];
-  specialidades: string[] = [];
-  pacientes: Perfil[]    = [];
-
-  // Ahora sólo fechas que tengan horarios
-  availableDates:   DateOption[] = [];
-  availableTimeSlots: string[]   = [];
-
+  // ROLE & PATIENT SELECTION
   isAdmin = false;
+  pacientes: Perfil[] = [];
+  selectedPacienteId: string | null = null;
+
+  // STEPS
+  step = 0; // 0=elige paciente (solo admin), 1=especialidad,2=profesional,3=slot
+  specialidades: string[] = [];
+  especialistas: Perfil[] = [];
+
+  // SLOTS
+  slots: Array<{ display:string; isoDate:string; time:string; dia:string }> = [];
+  selectedEspecialidad: string | null = null;
+  selectedProfesional:  Perfil | null   = null;
+  selectedSlot:         any    | null   = null;
+
+  private weeklyRaw: WeeklyScheduleRaw[] = [];
+  readonly daysMap = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
   constructor(
-    private fb: FormBuilder,
-    private supa: SupabaseService,
-    private auth: AuthService,
-    private snack: MatSnackBar,
-    private router: Router,
+    private supa:    SupabaseService,
+    private auth:    AuthService,
+    private snack:   MatSnackBar,
+    private router:  Router,
     private location: Location
-  ) {
-    this.form = this.fb.group({
-      paciente:     [''],
-      especialista: ['', Validators.required],
-      especialidad: ['', Validators.required],
-      fecha:        ['', Validators.required],
-      hora:         ['', Validators.required]
-    });
-  }
+  ) {}
 
   async ngOnInit() {
-    console.log('🔄 ngOnInit');
-    await this.loadUserRoleAndPatients();
-    await this.loadEspecialistas();
+    const u = await this.auth.currentUser();
+    if (!u) throw Error('Necesitas estar logueado');
 
-    // Cuando el usuario elija un especialista:
-    this.form.get('especialista')!.valueChanges.subscribe(async espId => {
-      console.log('→ Especialista seleccionado:', espId);
-      this.specialidades = [];
-      this.availableDates = [];
-      this.availableTimeSlots = [];
-      this.form.patchValue({ especialidad: '', fecha: '', hora: '' });
-
-      if (!espId) return;
-      const { data: prof } = await this.supa
-        .from('profiles')
-        .select('specialties')
-        .eq('user_id', espId)
-        .single();
-      this.specialidades = prof?.specialties || [];
-      console.log('   - Especialidades:', this.specialidades);
-    });
-
-    // Cuando elija una especialidad:
-    this.form.get('especialidad')!.valueChanges.subscribe(async espTrat => {
-      console.log('→ Especialidad seleccionada:', espTrat);
-      this.availableDates = [];
-      this.availableTimeSlots = [];
-      this.form.patchValue({ fecha: '', hora: '' });
-
-      const espId = this.form.get('especialista')!.value;
-      if (!espId || !espTrat) return;
-
-      // Tomo todas las availability_date que tenga horarios
-      const { data: hrs } = await this.supa
-        .from('horarios')
-        .select('availability_date')
-        .eq('user_id', espId)
-        .eq('specialty', espTrat);
-
-      const uniq = Array.from(new Set(hrs?.map(h => h.availability_date) || []));
-      console.log('   - Fechas crudas desde BD:', uniq);
-
-      // Mapeo a DateOption (value+label)
-      this.availableDates = uniq
-      .sort()
-      .map(d => ({
-        value: d,
-        label: this.formatDateLabel(d)
-      }));
-      console.log('   - availableDates:', this.availableDates);
-    });
-
-    // Cuando elija una fecha:
-    this.form.get('fecha')!.valueChanges.subscribe(fecha => {
-      console.log('→ Fecha seleccionada:', fecha);
-      this.loadAvailability(fecha);
-    });
-  }
-
-  private async loadUserRoleAndPatients() {
-    console.log('🔄 loadUserRoleAndPatients');
-    const user = await this.auth.currentUser();
-    if (!user) return;
     const { data: me } = await this.supa
       .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', u.id)
       .single();
     this.isAdmin = me?.role === 'admin';
-    console.log('   - Es admin?', this.isAdmin);
 
     if (this.isAdmin) {
-      this.form.get('paciente')!.setValidators(Validators.required);
-      const { data: pats } = await this.supa
+      // paso 0: elegir paciente
+      const { data: pats, error } = await this.supa
         .from('profiles')
-        .select('user_id,nombre,apellido')
-        .eq('role','paciente');
-      this.pacientes = pats || [];
-      console.log('   - Pacientes cargados:', this.pacientes);
+        .select('user_id,nombre,apellido,image_urls,role,approved')
+        .eq('role','paciente')
+        .eq('approved', true);
+      if (!error && pats) this.pacientes = pats;
+      this.step = 0;
     } else {
-      this.form.get('paciente')!.setValue(user.id);
-      console.log('   - ID paciente actual:', user.id);
+      // si no soy admin salto al paso 1
+      this.step = 1;
     }
+
+    await this.loadEspecialidades();
   }
 
-  private async loadEspecialistas() {
-    console.log('🔄 loadEspecialistas');
-    const { data: especs } = await this.supa
+  // ADMIN -> seleccionar paciente
+  selectPaciente(p: Perfil) {
+    this.selectedPacienteId = p.user_id;
+    this.step = 1; // ahora paso a elegir especialidad
+  }
+
+  private async loadEspecialidades() {
+    const { data: perfiles } = await this.supa
       .from('profiles')
-      .select('user_id,nombre,apellido')
+      .select('specialties')
       .eq('role','especialista')
-      .eq('approved', true);
-    this.especialistas = especs || [];
-    console.log('   - Especialistas:', this.especialistas);
+      .eq('approved',true);
+    const all = perfiles?.flatMap(x => x.specialties || []) || [];
+    this.specialidades = Array.from(new Set(all));
   }
 
-  // Dentro de SolicitarTurnoComponent...
+  // PASO 1 -> especialidad
+  selectEspecialidad(s: string) {
+    this.selectedEspecialidad = s;
+    this.step = 2;
+    this.loadProfesionales(s);
+  }
 
-  private async loadAvailability(fecha: string) {
-    console.log('🔄 loadAvailability(', fecha, ')');
-    this.availableTimeSlots = [];
+  private async loadProfesionales(espec: string) {
+    const { data: profs } = await this.supa
+      .from('profiles')
+      .select('user_id,nombre,apellido,image_urls')
+      .eq('role','especialista')
+      .eq('approved',true)
+      .contains('specialties',[espec]);
+    this.especialistas = profs || [];
+  }
 
-    const espId   = this.form.get('especialista')!.value;
-    const espTrat = this.form.get('especialidad')!.value;
-    const pacId   = this.form.get('paciente')!.value;
-    if (!espId || !espTrat || !fecha) return;
-
-    // 1️⃣ Traigo los horarios "oficiales" para esa fecha
-    let { data: hrs, error } = await this.supa
-      .from('horarios')
-      .select('start_time,end_time')
-      .eq('user_id', espId)
-      .eq('specialty', espTrat)
-      .eq('availability_date', fecha);
-    console.log('   - horarios por fecha:', hrs, error);
-
-    // 2️⃣ Fallback day-of-week si fuera necesario…
-    if ((hrs?.length || 0) === 0 && !error) {
-      const dow = new Date(fecha)
-        .toLocaleDateString('es-AR',{ weekday:'long' })
-        .replace(/^./, c => c.toUpperCase());
-      ({ data: hrs, error } = await this.supa
-        .from('horarios')
-        .select('start_time,end_time')
-        .eq('user_id', espId)
-        .eq('specialty', espTrat)
-        .eq('day', dow));
-      console.log('   - horarios por day-of-week:', hrs, error);
-    }
-
-    if (error) {
-      this.snack.open('Error cargando horarios','Cerrar',{duration:3000});
+  // PASO 2 -> profesional
+  async selectProfesional(p: Perfil): Promise<void> {
+    this.selectedProfesional = p;
+    const { data: raw, error } = await this.supa
+      .from('horarios_semanales')
+      .select('dia_semana,desde,hasta')
+      .eq('especialista_id', p.user_id);
+    if (error || !raw?.length) {
+      this.snack.open('Sin franjas semanales','Cerrar',{duration:3000});
       return;
     }
-    if (!hrs || hrs.length === 0) {
-      this.snack.open(`No hay horarios para ${fecha}`,'Cerrar',{duration:3000});
-      return;
-    }
+    this.weeklyRaw = raw;
+    await this.loadDateTimeSlots();
+    this.step = 3;
+    return;
+  }
 
-    // 3️⃣ Genero los slots de 30'
-    let slots = hrs.flatMap(h =>
-      this.generateTimeSlots(h.start_time, h.end_time, 30)
-    );
-    console.log('   - slots antes de filtrar:', slots);
-
-    // 4️⃣ Filtro los que YA pediste
-    const { data: myTurns } = await this.supa
+  // Generar slots próximos 15 días
+  private async loadDateTimeSlots() {
+    const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
+    const { data: ocup } = await this.supa
       .from('turnos')
-      .select('hora')
-      .eq('paciente_id', pacId)
-      .eq('especialista_id', espId)
-      .eq('fecha', fecha);
-    const booked = myTurns?.map(t => t.hora) || [];
-    console.log('   - slots ya reservados por este paciente:', booked);
+      .select('fecha,hora')
+      .eq('especialista_id', this.selectedProfesional!.user_id)
+      .in('estado',['Pendiente','Aceptado','Realizado']);
+    const occupied = (ocup||[]).map(t=>`${t.fecha}|${t.hora}`);
 
-    slots = slots.filter(s => !booked.includes(s));
-    console.log('   - slots disponibles finales:', slots);
+    const today = new Date(),
+          limit = new Date(); limit.setDate(today.getDate()+15);
 
-    this.availableTimeSlots = slots;
-
-    if (slots.length === 0) {
-      this.snack.open(`Ya solicitaste todos los turnos posibles para el ${fecha}`,'Cerrar',{duration:3000});
+    const result: typeof this.slots = [];
+    for (let d=new Date(today); d<=limit; d.setDate(d.getDate()+1)) {
+      const dow = d.getDay(),
+            franjas = this.weeklyRaw.filter(w=>w.dia_semana===dow);
+      for (const f of franjas) {
+        let cur=this.parseMinutes(f.desde),
+            end=this.parseMinutes(f.hasta);
+        while(cur+30<=end){
+          if(d.toDateString()===today.toDateString() && cur<nowMin){ cur+=30; continue; }
+          const t=this.formatTime(cur),
+                yyyy=d.getFullYear(),
+                mm=String(d.getMonth()+1).padStart(2,'0'),
+                dd=String(d.getDate()).padStart(2,'0'),
+                isoDate=`${yyyy}-${mm}-${dd}`;
+          if(!occupied.includes(`${isoDate}|${t}`)){
+            result.push({
+              display: `${dd}/${mm} ${t}`,
+              isoDate,
+              time: t,
+              dia: `${this.daysMap[dow]} ${d.toLocaleDateString('es-AR')}`
+            });
+          }
+          cur+=30;
+        }
+      }
     }
+    this.slots = result;
   }
 
-
-  // parseo manual de YYYY-MM-DD a día/mes/año en local
-  private formatDateLabel(fecha: string): string {
-    const [y, m, d] = fecha.split('-').map(n => parseInt(n, 10));
-    const dd = String(d).padStart(2,'0');
-    const mm = String(m).padStart(2,'0');
-    return `${dd}/${mm}/${y}`;
+  selectSlot(slot: any) {
+    this.selectedSlot = slot;
   }
 
-  private parseMinutes(t: string) {
-    const [h,m] = t.split(':').map(Number);
-    return h*60 + m;
-  }
-  private formatTime(min: number) {
-    const h = Math.floor(min/60), m = min%60;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-  }
-  private generateTimeSlots(start: string, end: string, interval: number) {
-    const slots: string[] = [];
-    let cur    = this.parseMinutes(start),
-        endMin = this.parseMinutes(end);
-    while (cur + interval <= endMin) {
-      slots.push(this.formatTime(cur));
-      cur += interval;
-    }
-    return slots;
-  }
-
+  // PASO FINAL -> submit
   async onSubmit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
+    // admin debe haber elegido paciente
+    if (this.isAdmin && !this.selectedPacienteId) {
+      return this.snack.open('Selecciona un paciente', 'Cerrar', {duration:3000});
     }
-    const { paciente, especialista, especialidad, fecha, hora } = this.form.value;
-    console.log('💾 Solicitando turno con:', { paciente, especialista, especialidad, fecha, hora });
-    const { error } = await this.supa
-      .from('turnos')
-      .insert({ paciente_id: paciente,
-                especialista_id: especialista,
-                especialidad,
-                fecha,
-                hora,
-                estado:'Pendiente' });
+    // todos los pasos
+    if (!this.selectedEspecialidad || !this.selectedProfesional || !this.selectedSlot) {
+      return this.snack.open('Completa todos los pasos', 'Cerrar', {duration:3000});
+    }
+
+    const user = await this.auth.currentUser();
+    const payload = {
+      paciente_id:     this.isAdmin ? this.selectedPacienteId : user!.id,
+      especialista_id: this.selectedProfesional!.user_id,
+      especialidad:    this.selectedEspecialidad,
+      fecha:           this.selectedSlot.isoDate,
+      hora:            this.selectedSlot.time,
+      estado:          'Pendiente'
+    };
+    console.log('INSERT TURNOS:', payload);
+
+    const { error } = await this.supa.from('turnos').insert(payload);
     if (error) {
-      this.snack.open('Error al solicitar turno','Cerrar',{duration:3000});
-    } else {
-      this.snack.open('Turno solicitado','Cerrar',{duration:2000});
-      this.router.navigateByUrl('/paciente/mis-turnos');
+      console.error('Insert error:', error);
+      return this.snack.open('Error al solicitar turno: '+error.message, 'Cerrar',{duration:4000});
     }
+    this.snack.open('Turno solicitado', 'Cerrar',{duration:2000});
+    this.router.navigateByUrl('/paciente/mis-turnos');
+    return;
   }
+   onSelectEspecialidad(spec: string) {
+    this.selectedEspecialidad = spec;
+    this.step = 2;
+    this.loadProfesionales(spec);
+  }
+    /**
+   * Devuelve la URL absoluta al asset de la especialidad,
+   * transformando acentos y espacios a un nombre de archivo válido.
+   */
+  getEspecialidadImage(spec: string | null): string {
+    if (!spec) {
+      return '/assets/default-spec.jpg';
+    }
+    // aquí ya sabemos que spec es string
+    const name = spec
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    return `/assets/especialidades/${name}.jpg`;
+  }
+
+    /** Manejador de error de imagen para limpiar el onerror y asignar fallback */
+  onImgError(img: HTMLImageElement, fallback: string) {
+    img.onerror = null;
+    img.src = fallback;
+  }
+
 
   goBack() {
     this.location.back();
+  }
+
+  private parseMinutes(t:string) {
+    const [h,m] = t.split(':').map(Number);
+    return h*60 + m;
+  }
+  private formatTime(m:number) {
+    const h=Math.floor(m/60), mm=m%60;
+    return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
   }
 }

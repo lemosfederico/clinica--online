@@ -1,36 +1,154 @@
 @use 'src/styles' as *;
 @use '@angular/material' as mat;
 
-.full-width { width: 100%; }
-mat-list-item {
-  margin-bottom: 0.5rem;
-}
+/* --------------------------------------------------
+   Variables para efecto transparente + blur
+-------------------------------------------------- */
+$card-bg:        rgba(255, 255, 255, 0.75);
+$card-radius:    8px;
+$blur-strength:  12px;
 
-.actions-bar {
+/* --------------------------------------------------
+   Contenedor principal con glassmorphism
+-------------------------------------------------- */
+:host {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+  gap: 16px;
+
+  /* Fondo semitransparente + desenfoque */
+  background-color: $card-bg !important;
+  backdrop-filter: blur($blur-strength);
+  border-radius: $card-radius;
 }
 
-.actions-bar button mat-icon {
-  margin-right: 0.5rem;
+/* --------------------------------------------------
+   Cabecera (header)
+-------------------------------------------------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid mat.get-color-from-palette($clinica--online-primary, 100);
+  padding-bottom: 12px;
+
+  .title {
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+  .actions button {
+    text-transform: none;
+  }
 }
 
-.back-button {
-  position: absolute;
-  top: auto;
-  left: auto;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.3s;
+/* --------------------------------------------------
+   Barra de herramientas (filtro + botones)
+-------------------------------------------------- */
+.toolbar {
+  display: flex;
+  gap: 12px;
+
+  mat-form-field {
+    flex: 1;
+  }
+  .perfil-button {
+    text-transform: none;
+  }
+}
+
+/* --------------------------------------------------
+   Scroll horizontal para la tabla
+-------------------------------------------------- */
+.table-container {
+  overflow-x: auto;
+}
+
+/* --------------------------------------------------
+   Tabla estilo D
+-------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  background: transparent; /* mostrar el fondo blur del host */
+}
+
+th,
+td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+thead th {
+  font-weight: 600;
+  color: mat.get-color-from-palette($clinica--online-primary, 900);
+  background: mat.get-color-from-palette($clinica--online-primary, 100);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tbody tr {
+  background: mat.get-color-from-palette($clinica--online-primary, 50);
+  transition: background .2s, box-shadow .2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 1);
+    background: $card-bg;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
+}
+
+/* --------------------------------------------------
+   Avatar en celda
+-------------------------------------------------- */
+.avatar-cell {
+  width: 56px;
+
+  img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}
+
+/* --------------------------------------------------
+   Chip de estado
+-------------------------------------------------- */
+.estado-cell mat-chip {
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------
+   Acciones por fila
+-------------------------------------------------- */
+.actions-cell button {
+  text-transform: none;
+}
+
+/* --------------------------------------------------
+   Botón volver
+-------------------------------------------------- */
+.back-button {
+  background: mat.get-color-from-palette($clinica--online-primary, 100);
+  color: mat.get-color-from-palette($clinica--online-primary, 900);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s;
 
   mat-icon {
-    color: mat.get-color-from-palette($clinica--online-primary, 800);
-    font-size: 24px;
+    font-size: 18px;
+  }
+
+  &:hover {
+    background: mat.get-color-from-palette($clinica--online-primary, 200);
   }
 }

@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MisTurnosComponent } from './mis-turnos.component';
+import { MisTurnosEspecialistaComponent } from './mis-turnos.component';
 
-describe('MisTurnosComponent', () => {
-  let component: MisTurnosComponent;
-  let fixture: ComponentFixture<MisTurnosComponent>;
+describe('MisTurnosEspecialistaComponent', () => {
+  let component: MisTurnosEspecialistaComponent;
+  let fixture: ComponentFixture<MisTurnosEspecialistaComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [MisTurnosComponent]
+      declarations: [MisTurnosEspecialistaComponent]
     });
-    fixture = TestBed.createComponent(MisTurnosComponent);
+    fixture = TestBed.createComponent(MisTurnosEspecialistaComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

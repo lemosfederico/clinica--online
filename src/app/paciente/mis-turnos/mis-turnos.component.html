@@ -1,9 +1,9 @@
-<!-- Botón Volver -->
+<!-- src/app/turnos/mis-turnos-paciente/mis-turnos.component.html -->
+
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
-<!-- Botón Solicitar Turno -->
 <div class="actions-bar">
   <button mat-flat-button color="accent" routerLink="/solicitar-turno">
     <mat-icon>add_circle</mat-icon>
@@ -11,15 +11,37 @@
   </button>
 </div>
 
-<!-- Filtro -->
+
+<!-- Nueva sección: descarga por profesional -->
+<ng-container *ngIf="profesionalesAtendidos.length">
+  <h3>Descargar Atenciones por Profesional</h3>
+  <div class="prof-list">
+    <button
+      mat-flat-button
+      color="primary"
+      *ngFor="let prof of profesionalesAtendidos"
+      (click)="downloadAtenciones(prof)"
+    >
+      <mat-icon>picture_as_pdf</mat-icon>
+      {{ prof.nombre }} {{ prof.apellido }}
+    </button>
+  </div>
+</ng-container>
+
 <mat-form-field appearance="outline" class="full-width">
-  <mat-label>Filtrar por especialidad o especialista</mat-label>
-  <input matInput [formControl]="filterCtrl"
-         placeholder="Ej: Cardiología o Dr. Pérez">
+  <mat-label>Filtrar por cualquier campo (turno o historia clínica)</mat-label>
+  <input
+    matInput
+    [formControl]="filterCtrl"
+    placeholder="Ej: Lunes, 16:00, 75 kg, Talle 39…"
+  />
 </mat-form-field>
 
-<!-- Tabla de Turnos -->
-<table mat-table [dataSource]="dataSource" class="mat-elevation-z8 full-width">
+<table
+  mat-table
+  [dataSource]="dataSource"
+  class="mat-elevation-z8 full-width"
+>
   <!-- Fecha -->
   <ng-container matColumnDef="fecha">
     <th mat-header-cell *matHeaderCellDef>Fecha</th>
@@ -52,26 +74,36 @@
     <td mat-cell *matCellDef="let t">{{ t.estado }}</td>
   </ng-container>
 
+  <!-- Historia Clínica -->
+  <ng-container matColumnDef="historia">
+    <th mat-header-cell *matHeaderCellDef>Historia</th>
+    <td mat-cell *matCellDef="let t">
+    <!-- después (routeLink opcional) -->
+    <button mat-button color="primary"
+            *ngIf="t.historia"
+            (click)="goToHistoria(t)"
+            [routerLink]="['/paciente/historia-clinica']"
+            [queryParams]="{ turnoId: t.id }">
+      <mat-icon>description</mat-icon>
+      Historia Clínica
+    </button>
+    </td>
+  </ng-container>
+
   <!-- Acciones -->
   <ng-container matColumnDef="acciones">
     <th mat-header-cell *matHeaderCellDef>Acciones</th>
     <td mat-cell *matCellDef="let t">
-
-      <!-- Cancelar turno: sólo si NO está Realizado -->
       <button mat-button color="warn"
-              *ngIf="t.estado !== 'Realizado'"
+              *ngIf="t.estado !== 'Realizado' && t.estado !== 'Cancelado'"
               (click)="cancelar(t)">
         Cancelar
       </button>
-
-      <!-- Ver reseña: sólo si el especialista dejó comentario -->
       <button mat-button
               *ngIf="!!t.comentario_especialista"
               (click)="verResena(t)">
         Ver Reseña
       </button>
-
-      <!-- Completar encuesta: sólo si está Realizado, hay reseña y aún no contestó -->
       <button mat-button color="primary"
               *ngIf="
                 t.estado === 'Realizado'
@@ -81,8 +113,6 @@
               (click)="completarEncuesta(t)">
         Completar Encuesta
       </button>
-
-      <!-- Calificar Atención: sólo si está Realizado y aún no calificó -->
       <button mat-button color="accent"
               *ngIf="
                 t.estado === 'Realizado'
@@ -91,10 +121,8 @@
               (click)="calificar(t)">
         Calificar Atención
       </button>
-
     </td>
   </ng-container>
-
 
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
   <tr mat-row        *matRowDef="let row; columns: displayedColumns;"></tr>

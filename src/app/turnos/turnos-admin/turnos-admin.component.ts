@@ -12,6 +12,7 @@ import { Location } from '@angular/common';
 
 import { SupabaseService } from '../../core/supabase.service';
 import { CancelarTurnoDialogComponent } from '../../turnos/cancelar-turno-dialog/cancelar-turno-dialog.component';
+import { Router } from '@angular/router';
 
 interface Perfil {
   user_id:  string;
@@ -66,8 +67,13 @@ export class TurnosAdminComponent implements OnInit {
     private supa: SupabaseService,
     private dialog: MatDialog,
     private snack: MatSnackBar,
-    private location: Location
+    private location: Location,
+    private router: Router
   ) {}
+
+  redirigirASolicitarTurno() {
+  this.router.navigate(["/solicitar-turno"]);
+}
 
   async ngOnInit() {
     await this.loadTurnos();

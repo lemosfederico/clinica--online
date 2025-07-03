@@ -1,0 +1,36 @@
+@use 'src/styles' as *;
+@use '@angular/material' as mat;
+
+
+.perfil-card {
+  max-width: 600px;
+  margin: 24px auto;
+  padding: 16px;
+}
+
+mat-card-content p {
+  margin: 8px 0;
+}
+
+mat-card-actions {
+  text-align: right;
+}
+
+.back-button {
+  position: absolute;
+  top: auto;
+  left: auto;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  mat-icon {
+    color: mat.get-color-from-palette($clinica--online-primary, 800);
+    font-size: 24px;
+  }
+}

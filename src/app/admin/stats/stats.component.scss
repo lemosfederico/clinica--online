@@ -1,0 +1,98 @@
+@use 'src/styles' as *;
+@use '@angular/material' as mat;
+
+/* --------------------------------------------------
+   Host & Layout
+-------------------------------------------------- */
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: mat.get-color-from-palette($clinica--online-primary, 50);
+  gap: 16px;
+}
+
+/* --------------------------------------------------
+   Mat-Card Estilo Profesional
+-------------------------------------------------- */
+mat-card {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  
+  & > .mat-card-title {
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  & > .mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+  }
+}
+
+/* --------------------------------------------------
+   Charts Limpios y Centrados
+-------------------------------------------------- */
+.chart-wrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+canvas.chart {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  max-height: 300px;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------
+   Asegurar Consistencia Responsiva
+-------------------------------------------------- */
+@media (max-width: 600px) {
+  mat-card,
+  .chart-wrapper {
+    padding: 12px;
+  }
+
+  canvas.chart {
+    max-width: 100%;
+    max-height: 250px;
+  }
+}
+
+/* --------------------------------------------------
+   Detalles adicionales
+-------------------------------------------------- */
+.stats-details {
+  padding: 0 8px;
+
+  .json-block {
+    font-family: monospace;
+    background: mat.get-color-from-palette($clinica--online-primary, 100);
+    padding: 12px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 16px;
+  }
+
+  ul {
+    padding-left: 1.5rem;
+    li {
+      margin-bottom: 4px;
+    }
+  }
+}

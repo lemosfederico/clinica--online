@@ -1,0 +1,71 @@
+<!-- Botón Volver -->
+<button mat-icon-button class="back-button" (click)="goBack()">
+  <mat-icon>arrow_back</mat-icon>
+</button>
+
+
+<mat-card class="historia-card">
+  <mat-card-title>Historia Clínica</mat-card-title>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    <mat-form-field appearance="outline">
+      <mat-label>Altura (cm)</mat-label>
+      <input matInput type="number" formControlName="altura">
+      <mat-error *ngIf="form.get('altura')?.hasError('required')">
+        Obligatorio
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Peso (kg)</mat-label>
+      <input matInput type="number" formControlName="peso">
+      <mat-error *ngIf="form.get('peso')?.hasError('required')">
+        Obligatorio
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Temperatura (°C)</mat-label>
+      <input matInput type="number" formControlName="temperatura">
+      <mat-error *ngIf="form.get('temperatura')?.hasError('required')">
+        Obligatorio
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Presión</mat-label>
+      <input matInput formControlName="presion">
+      <mat-error *ngIf="form.get('presion')?.hasError('required')">
+        Obligatorio
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Detalles dinámicos -->
+    <div formArrayName="detalles">
+      <div *ngFor="let d of detalles.controls; let i=index" [formGroupName]="i" class="detalle-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Clave</mat-label>
+          <input matInput formControlName="clave">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Valor</mat-label>
+          <input matInput formControlName="valor">
+        </mat-form-field>
+        <button mat-icon-button color="warn" (click)="removeDetalle(i)" type="button">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <button mat-button type="button" (click)="addDetalle()"
+            [disabled]="detalles.length >= maxDetalles">
+      <mat-icon>add</mat-icon> Agregar detalle
+    </button>
+
+    <div class="actions">
+      <button mat-raised-button color="primary" type="submit">
+        Guardar Historia
+      </button>
+    </div>
+  </form>
+</mat-card>

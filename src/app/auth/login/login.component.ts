@@ -1,4 +1,5 @@
 // src/app/auth/login/login.component.ts
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -10,8 +11,9 @@ import { MatIconModule }      from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Location }           from '@angular/common';
 
-import { SupabaseService } from '../../core/supabase.service';
-import { ErrorService }    from '../../core/error.service';
+import { AuthService }       from '../../core/auth.service';
+import { SupabaseService }   from '../../core/supabase.service';
+import { ErrorService }      from '../../core/error.service';
 
 @Component({
   standalone: true,
@@ -44,18 +46,21 @@ export class LoginComponent implements OnInit {
   ];
 
   constructor(
-    private fb: FormBuilder,
-    private supa: SupabaseService,
+    private fb:       FormBuilder,
+    private auth:     AuthService,
+    private supa:     SupabaseService,
     private errorSvc: ErrorService,
-    private router: Router,
+    private router:   Router,
     private location: Location
   ) {}
 
   ngOnInit() {
+      
     this.form = this.fb.group({
       email:    ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+    
   }
 
   usarUsuario(usr: any) {
@@ -76,58 +81,61 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
 
     const { email, password } = this.form.value;
-    // 1️⃣ Intento de login
-    const { data, error } = await this.supa.signIn(
-      email.trim().toLowerCase(),
-      password
-    );
-    if (error) {
-      this.errorMessage = this.errorSvc.translate(error);
+
+    try {
+      // 1️⃣ Intento de login vía AuthService (incluye logging)
+      const { user } = await this.auth.signIn(
+        email.trim().toLowerCase(),
+        password
+      );
+
+      // 2️⃣ Verificar email
+      if (!user.email_confirmed_at) {
+        this.errorMessage = this.errorSvc.translate({ message: 'Email not confirmed' });
+        await this.auth.signOut();
+        this.loading = false;
+        return;
+      }
+
+      // 3️⃣ Traer perfil
+      const { data: profile, error: errProfile } = await this.supa
+        .from('profiles')
+        .select('role,approved')
+        .eq('user_id', user.id)
+        .single();
+
+      if (errProfile || !profile) {
+        this.errorMessage = this.errorSvc.translate(errProfile ?? { message: 'No se pudo obtener el perfil de usuario.' });
+        this.loading = false;
+        return;
+      }
+
+      // 4️⃣ Validar especialista
+      if (profile.role === 'especialista' && !profile.approved) {
+        this.errorMessage = 'Tu cuenta de especialista está pendiente de aprobación.';
+        await this.auth.signOut();
+        this.loading = false;
+        return;
+      }
+
+      // 5️⃣ Redirigir
       this.loading = false;
-      return;
-    }
+      switch (profile.role) {
+        case 'admin':
+          this.router.navigateByUrl('/admin/users');
+          break;
+        case 'especialista':
+          this.router.navigateByUrl('/especialista/mis-turnos');
+          break;
+        default:
+          this.router.navigateByUrl('/paciente/mis-turnos');
+      }
 
-    const user = data.user!;
-    // 2️⃣ Verificar email
-    if (!user.email_confirmed_at) {
-      this.errorMessage = this.errorSvc.translate({ message: 'Email not confirmed' });
-      await this.supa.signOut();
+    } catch (err: any) {
+      // Capturamos el error de signIn o insert a login_logs
+      this.errorMessage = this.errorSvc.translate(err);
+      console.error('Login falla o insert log falla:', err);
       this.loading = false;
-      return;
-    }
-
-    // 3️⃣ Traer perfil
-    const { data: profile, error: errProfile } = await this.supa
-      .from('profiles')
-      .select('role,approved')
-      .eq('user_id', user.id)
-      .single();
-
-    if (errProfile || !profile) {
-      this.errorMessage = this.errorSvc.translate(errProfile ?? { message: 'No se pudo obtener el perfil de usuario.' });
-      this.loading = false;
-      return;
-    }
-
-    // 4️⃣ Validar especialista
-    if (profile.role === 'especialista' && !profile.approved) {
-      this.errorMessage = 'Tu cuenta de especialista está pendiente de aprobación.';
-      await this.supa.signOut();
-      this.loading = false;
-      return;
-    }
-
-    // 5️⃣ Redirigir
-    this.loading = false;
-    switch (profile.role) {
-      case 'admin':
-        this.router.navigateByUrl('/admin/users');
-        break;
-      case 'especialista':
-        this.router.navigateByUrl('/especialista/mis-turnos');
-        break;
-      default:
-        this.router.navigateByUrl('/paciente/mis-turnos');
     }
   }
 }

@@ -1,28 +1,31 @@
-import { Component, OnInit }          from '@angular/core';
-import { CommonModule }               from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatTableModule }             from '@angular/material/table';
-import { MatFormFieldModule }         from '@angular/material/form-field';
-import { MatInputModule }             from '@angular/material/input';
-import { MatButtonModule }            from '@angular/material/button';
-import { MatIconModule }              from '@angular/material/icon';
-import { RouterModule }               from '@angular/router';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Location }                   from '@angular/common';
+// src/app/turnos/mis-turnos-paciente/mis-turnos.component.ts
 
-import { SupabaseService }            from '../../core/supabase.service';
-import { AuthService }                from '../../core/auth.service';
-import { Turno }                      from '../../models/turno.model';
+import { Component, OnInit }              from '@angular/core';
+import { CommonModule }                   from '@angular/common';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatTableModule, MatTableDataSource }  from '@angular/material/table';
+import { MatFormFieldModule }             from '@angular/material/form-field';
+import { MatInputModule }                 from '@angular/material/input';
+import { MatButtonModule }                from '@angular/material/button';
+import { MatIconModule }                  from '@angular/material/icon';
+import { Router, RouterModule }           from '@angular/router';
+import { MatDialog, MatDialogModule }     from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Location }                       from '@angular/common';
+
+import { SupabaseService }   from '../../core/supabase.service';
+import { AuthService }       from '../../core/auth.service';
+import { Turno }             from '../../models/turno.model';
+
+
 import { CancelarTurnoDialogComponent } from '../../turnos/cancelar-turno-dialog/cancelar-turno-dialog.component';
 import { VerResenaDialogComponent }     from '../../turnos/ver-resena-dialog/ver-resena-dialog.component';
 import { EncuestaDialogComponent }      from '../../turnos/encuesta-dialog/encuesta-dialog.component';
 
-interface Perfil {
-  user_id:  string;
-  nombre:   string;
-  apellido: string;
-}
+import jsPDF     from 'jspdf';
+import html2canvas from 'html2canvas';
+
+interface Perfil { user_id: string; nombre: string; apellido: string; }
 
 @Component({
   standalone: true,
@@ -44,96 +47,165 @@ interface Perfil {
 })
 export class MisTurnosPacienteComponent implements OnInit {
   filterCtrl       = new FormControl('');
-  displayedColumns = ['fecha','hora','especialidad','especialista','estado','acciones'];
+  displayedColumns = [
+    'fecha','hora','especialidad','especialista','estado','historia','acciones'
+  ];
+  dataSource!: MatTableDataSource<any>;
 
-  /** lista maestra sin filtrar */
-  allTurnos: Array<{
-    id: string;
-    fecha: string;
-    hora: string;
-    especialidad: string;
-    especialista: Perfil;
-    estado: string;
-    comentario_especialista: string | null;
-    comentario_paciente: string | null;
-  }> = [];
-
-  /** lista que alimenta la tabla */
-  dataSource = this.allTurnos;
+  // Lista de profesionales con al menos un turno realizado
+  profesionalesAtendidos: Perfil[] = [];
+  private userId = '';
 
   constructor(
-    private supa:  SupabaseService,
-    private auth:  AuthService,
-    private dialog: MatDialog,
-    private snack: MatSnackBar,
-    private location: Location
+    private supa:      SupabaseService,
+    private auth:      AuthService,
+    private dialog:    MatDialog,
+    private snack:     MatSnackBar,
+    private location:  Location,
+    private router:    Router
   ) {}
 
   async ngOnInit() {
     await this.loadTurnos();
-
+    // Filtro por searchText
+    this.dataSource.filterPredicate = (row, filter) =>
+      row.searchText.includes(filter);
     this.filterCtrl.valueChanges.subscribe(term => {
-      const txt = (term || '').toLowerCase().trim();
-      if (!txt) {
-        // si borran todo el filtro, muestro la lista completa
-        this.dataSource = this.allTurnos;
-      } else {
-        this.dataSource = this.allTurnos.filter(turno =>
-          turno.especialidad.toLowerCase().includes(txt)
-          || `${turno.especialista.nombre} ${turno.especialista.apellido}`.toLowerCase().includes(txt)
-        );
-      }
+      this.dataSource.filter = (term || '').toLowerCase().trim();
     });
   }
 
   private async loadTurnos() {
-    // 1) traer turnos del paciente
     const user = await this.auth.currentUser();
     if (!user) return;
+    this.userId = user.id;
 
-    const { data: raw, error } = await this.supa
+    // 1) Traer turnos del paciente
+    const { data: rawTurnos, error: errT } = await this.supa
       .from('turnos')
-      .select('id,fecha,hora,especialidad,especialista_id,estado,comentario_especialista,comentario_paciente')
+      .select(`
+        id, fecha, hora, especialidad,
+        especialista_id, estado,
+        comentario_especialista,
+        comentario_paciente
+      `)
       .eq('paciente_id', user.id)
       .order('fecha', { ascending: false });
-
-    if (error || !raw) {
-      console.error('Error trayendo turnos:', error);
+    if (errT || !rawTurnos) {
+      this.snack.open('Error al cargar turnos','Cerrar',{duration:3000});
       return;
     }
 
-    // 2) cargar datos de los especialistas
-    const espIds = Array.from(new Set(raw.map((r: any) => r.especialista_id)));
-    const { data: perfEsp, error: err2 } = await this.supa
+    // 2) Traer historias
+    const turnoIds = rawTurnos.map(r => r.id);
+    const { data: historias } = await this.supa
+      .from('historia_clinica')
+      .select(`turno_id, altura, peso, temperatura, presion, historia_detalles(clave,valor)`)
+      .in('turno_id', turnoIds);
+    const mapHist = new Map<number, any>((historias ?? []).map(h=>[h.turno_id,h]));
+
+    // 3) Cargar perfiles de especialistas
+    const espIds = Array.from(new Set(rawTurnos.map(r=>r.especialista_id)));
+    const { data: profs } = await this.supa
       .from('profiles')
       .select('user_id,nombre,apellido')
       .in('user_id', espIds);
+    const mapEsp = new Map<string,Perfil>((profs ?? []).map(p=>[p.user_id,p]));
 
-    if (err2 || !perfEsp) {
-      console.error('Error cargando especialistas:', err2);
+    // 4) Enriquecer y armar searchText
+    const enriched = rawTurnos.map(r => {
+      const esp = mapEsp.get(r.especialista_id)!;
+      const hc  = mapHist.get(r.id);
+      const parts = [
+        r.especialidad,
+        `${esp.nombre} ${esp.apellido}`,
+        ...(hc ? [
+          `altura ${hc.altura} cm`,
+          `peso ${hc.peso} kg`,
+          `temperatura ${hc.temperatura} °C`,
+          `presión ${hc.presion}`
+        ] : []),
+        ...((hc?.historia_detalles||[]).map((d:any)=>`${d.clave} ${d.valor}`))
+      ];
+      return {
+        ...r,
+        especialista: esp,
+        historia: hc,
+        searchText: parts.join(' ').toLowerCase()
+      };
+    });
+
+    // 5) Generar lista de profesionales atendidos (estado = Realizado)
+    const profMap = new Map<string,Perfil>();
+    enriched
+      .filter(t=>t.estado==='Realizado')
+      .forEach(t=> profMap.set(t.especialista.user_id, t.especialista));
+    this.profesionalesAtendidos = Array.from(profMap.values());
+
+    // 6) Inyectar en dataSource
+    this.dataSource = new MatTableDataSource(enriched);
+    this.dataSource.filter = (this.filterCtrl.value||'').toLowerCase().trim();
+  }
+
+  /** Descarga PDF con todas las atenciones realizadas por un profesional */
+  async downloadAtenciones(prof: Perfil) {
+    // Traer turnos realizados de este profesional
+    const { data: turns = [], error } = await this.supa
+      .from('turnos')
+      .select('fecha,hora,especialidad')
+      .eq('paciente_id', this.userId)
+      .eq('especialista_id', prof.user_id)
+      .eq('estado','Realizado')
+      .order('fecha',{ ascending:false });
+    if (error) {
+      this.snack.open('Error al cargar atenciones','Cerrar',{duration:3000});
+      return;
+    }
+    if (!turns || !turns.length) {
+      this.snack.open(`No hay atenciones con ${prof.nombre}`,'Cerrar',{duration:3000});
       return;
     }
 
-    const mapEsp = new Map(perfEsp.map((p: any) => [p.user_id, p]));
+    // Construir contenedor HTML para el PDF
+    const div = document.createElement('div');
+    div.style.background = 'white';
+    div.style.padding = '20px';
+    div.innerHTML = `
+      <div style="text-align:center; margin-bottom:16px;">
+        <img src="/assets/logo.png" alt="Logo" style="height:50px;"><br>
+        <h2>Informe de Atenciones</h2>
+        <p>Profesional: ${prof.nombre} ${prof.apellido}</p>
+        <p>Emitido: ${new Date().toLocaleDateString()}</p>
+      </div>
+      <table border="1" cellpadding="4" cellspacing="0"
+             style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead>
+          <tr><th>Fecha</th><th>Hora</th><th>Especialidad</th></tr>
+        </thead>
+        <tbody>
+          ${turns.map(t=>`
+            <tr>
+              <td>${t.fecha}</td>
+              <td>${t.hora}</td>
+              <td>${t.especialidad}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    document.body.appendChild(div);
 
-    // 3) mapear al formato de tabla
-    const mapped = (raw as any[]).map(r => ({
-      id: r.id,
-      fecha: r.fecha,
-      hora: r.hora,
-      especialidad: r.especialidad,
-      especialista: mapEsp.get(r.especialista_id) || { user_id:'', nombre:'', apellido:'' },
-      estado: r.estado,
-      comentario_especialista: r.comentario_especialista,
-      comentario_paciente: r.comentario_paciente
-    }));
-
-    // guardo maestro y muestro
-    this.allTurnos  = mapped;
-    this.dataSource = mapped;
+    // Renderizar a canvas y generar PDF
+    const canvas = await html2canvas(div, { scale: 2 });
+    const img = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p','pt','a4');
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(img, 'PNG', 0, 0, w, h);
+    pdf.save(`atenciones_${prof.nombre}_${prof.apellido}.pdf`);
+    document.body.removeChild(div);
   }
 
-  cancelar(turno: any) {
+cancelar(turno: any) {
     if (turno.estado === 'Realizado') return;
     const ref = this.dialog.open(CancelarTurnoDialogComponent, { data: { turno } });
     ref.afterClosed().subscribe(async motivo => {
@@ -195,8 +267,12 @@ export class MisTurnosPacienteComponent implements OnInit {
     });
   }
 
-
-  goBack() {
-    this.location.back();
+    goToHistoria(row: any) {
+    // navega a la página de historia, pasando el turnoId
+   this.router.navigate(['/paciente/historia-clinica'], {
+      queryParams: { turnoId: row.id }
+    });
   }
+
+  goBack(){ this.location.back(); }
 }

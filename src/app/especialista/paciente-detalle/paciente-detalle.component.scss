@@ -1,0 +1,71 @@
+/* src/app/especialista/paciente-detalle/paciente-detalle.component.scss */
+
+.dialog-container {
+  padding: 0;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #3f51b5;
+  color: white;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+
+/* Nuevo */
+.dialog-title {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1.25rem;
+  white-space: normal;   /* permite wrap */
+  word-break: break-word;/* evita overflow */
+  flex: 1 1 auto;        /* ocupa todo el espacio posible */
+}
+
+
+.dialog-header h2 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+
+.highlight {
+  font-weight: 700;
+}
+
+.close-btn {
+  color: white;
+}
+
+.turno-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.turno-info {
+  font-size: 0.95rem;
+}
+
+.especialidad {
+  font-style: italic;
+  color: #555;
+  margin-left: 4px;
+}
+
+mat-list-item:last-child {
+  border-bottom: none;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+}

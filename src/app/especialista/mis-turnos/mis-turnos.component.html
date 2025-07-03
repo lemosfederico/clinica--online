@@ -1,101 +1,189 @@
+<!-- src/app/turnos/mis-turnos-especialista/mis-turnos.component.html -->
+
 <!-- Botón Volver -->
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
-<!-- NUEVO: Botón para ir a Mi Perfil -->
+<!-- Toggle Vista -->
 <div class="actions-bar">
-  <button mat-flat-button color="accent" routerLink="/mi-perfil">
+  <button mat-flat-button color="primary" (click)="togglePacientes()">
+    <mat-icon>people</mat-icon>
+    {{ showPacientes
+       ? 'Ver Todos los Turnos'
+       : 'Mis Pacientes Atendidos' }}
+  </button>
+
+   <button mat-flat-button color="accent" routerLink="/mi-perfil">
     <mat-icon>person</mat-icon>
     Mi Perfil
   </button>
+  
 </div>
 
-<!-- Filtro -->
-<mat-form-field appearance="outline" class="full-width">
-  <mat-label>Filtrar por especialidad o paciente</mat-label>
-  <input matInput [formControl]="filterCtrl"
-         placeholder="Ej: Pediatría o Juan Pérez">
-</mat-form-field>
+<!-- SECCIÓN: Pacientes Atendidos -->
+<ng-container *ngIf="showPacientes; else turnosView">
+  <h2 class="section-title">Pacientes Atendidos</h2>
 
-<!-- Tabla de Turnos -->
-<table mat-table [dataSource]="dataSource" class="mat-elevation-z8 full-width">
-  <!-- Fecha -->
-  <ng-container matColumnDef="fecha">
-    <th mat-header-cell *matHeaderCellDef>Fecha</th>
-    <td mat-cell *matCellDef="let t">{{ t.fecha | date:'mediumDate' }}</td>
-  </ng-container>
+  <div class="pacientes-section">
+    <div class="pacientes-grid">
+      <mat-card
+        class="paciente-card"
+        *ngFor="let p of pacientesAtendidos"
+        [class.selected]="selectedPaciente?.user_id === p.user_id"
+        (click)="openDetalle(p)"
+      >
+        <!-- todas las fotos en fila -->
+        <div class="photos-cell">
+          <img
+            *ngFor="let url of p.image_urls"
+            [src]="url"
+            (error)="onAvatarError($event)"
+            class="avatar"
+            alt="Avatar {{ p.nombre }}"
+          />
+        </div>
 
-  <!-- Hora -->
-  <ng-container matColumnDef="hora">
-    <th mat-header-cell *matHeaderCellDef>Hora</th>
-    <td mat-cell *matCellDef="let t">{{ t.hora }}</td>
-  </ng-container>
+        <mat-card-title class="name">
+          {{ p.nombre }} {{ p.apellido }}
+        </mat-card-title>
+      </mat-card>
+    </div>
 
-  <!-- Especialidad -->
-  <ng-container matColumnDef="especialidad">
-    <th mat-header-cell *matHeaderCellDef>Especialidad</th>
-    <td mat-cell *matCellDef="let t">{{ t.especialidad }}</td>
-  </ng-container>
+    <div *ngIf="selectedPaciente" class="detalle-turnos">
+      <h3>
+        Turnos Realizados de {{ selectedPaciente.nombre }}
+        {{ selectedPaciente.apellido }}
+      </h3>
+      <mat-list *ngIf="turnosDelPaciente.length; else sinTurnosPaciente">
+        <mat-list-item *ngFor="let t of turnosDelPaciente">
+          <div mat-line>
+            {{ t.fecha | date:'dd/MM/yyyy' }} — {{ t.hora }}
+            ({{ t.especialidad }})
+          </div>
+          <button
+            mat-button
+            color="primary"
+            (click)="verResena(t)"
+          >
+            <mat-icon>rate_review</mat-icon>
+            Ver Reseña
+          </button>
+        </mat-list-item>
+      </mat-list>
+      <ng-template #sinTurnosPaciente>
+        <p>No hay turnos en estado “Realizado”.</p>
+      </ng-template>
+    </div>
+  </div>
+</ng-container>
 
-  <!-- Paciente -->
-  <ng-container matColumnDef="paciente">
-    <th mat-header-cell *matHeaderCellDef>Paciente</th>
-    <td mat-cell *matCellDef="let t">
-      {{ t.paciente.nombre }} {{ t.paciente.apellido }}
-    </td>
-  </ng-container>
+<!-- SECCIÓN: Todos los Turnos -->
+<ng-template #turnosView>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Filtrar por cualquier campo</mat-label>
+    <input matInput [formControl]="filterCtrl" placeholder="Ej: fiebre, 16:00…" />
+  </mat-form-field>
 
-  <!-- Estado -->
-  <ng-container matColumnDef="estado">
-    <th mat-header-cell *matHeaderCellDef>Estado</th>
-    <td mat-cell *matCellDef="let t">{{ t.estado }}</td>
-  </ng-container>
+  <table mat-table [dataSource]="dataSource" class="mat-elevation-z8 full-width">
+    <!-- Fecha -->
+    <ng-container matColumnDef="fecha">
+      <th mat-header-cell *matHeaderCellDef>Fecha</th>
+      <td mat-cell *matCellDef="let t">{{ t.fecha | date:'shortDate' }}</td>
+    </ng-container>
+    <!-- Hora -->
+    <ng-container matColumnDef="hora">
+      <th mat-header-cell *matHeaderCellDef>Hora</th>
+      <td mat-cell *matCellDef="let t">{{ t.hora }}</td>
+    </ng-container>
+    <!-- Especialidad -->
+    <ng-container matColumnDef="especialidad">
+      <th mat-header-cell *matHeaderCellDef>Especialidad</th>
+      <td mat-cell *matCellDef="let t">{{ t.especialidad }}</td>
+    </ng-container>
+    <!-- Paciente -->
+    <ng-container matColumnDef="paciente">
+      <th mat-header-cell *matHeaderCellDef>Paciente</th>
+      <td mat-cell *matCellDef="let t">
+        {{ t.paciente.nombre }} {{ t.paciente.apellido }}
+      </td>
+    </ng-container>
+    <!-- Estado -->
+    <ng-container matColumnDef="estado">
+      <th mat-header-cell *matHeaderCellDef>Estado</th>
+      <td mat-cell *matCellDef="let t">{{ t.estado }}</td>
+    </ng-container>
+    <!-- Historia -->
+    <ng-container matColumnDef="historia">
+      <th mat-header-cell *matHeaderCellDef>Historia</th>
+      <td mat-cell *matCellDef="let t">
+        <button
+          mat-button
+          color="primary"
+          *ngIf="t.historia"
+          [routerLink]="['/especialista/historia-clinica', t.id]"
+        >
+          <mat-icon>description</mat-icon> Ver Historia
+        </button>
+        <button
+          mat-button
+          color="accent"
+          *ngIf="t.estado === 'Realizado' && !t.historia"
+          [routerLink]="['/especialista/historia-clinica', t.id]"
+        >
+          <mat-icon>note_add</mat-icon> Agregar Historia
+        </button>
+      </td>
+    </ng-container>
 
     <!-- Acciones -->
-  <ng-container matColumnDef="acciones">
-    <th mat-header-cell *matHeaderCellDef>Acciones</th>
-    <td mat-cell *matCellDef="let t">
+    <ng-container matColumnDef="acciones">
+      <th mat-header-cell *matHeaderCellDef>Acciones</th>
+      <td mat-cell *matCellDef="let t">
+        <button
+          mat-button
+          color="primary"
+          *ngIf="!['Realizado','Cancelado','Rechazado','Aceptado'].includes(t.estado)"
+          (click)="aceptar(t)"
+        >
+          Aceptar
+        </button>
+        <button
+          mat-button
+          color="warn"
+          *ngIf="!['Aceptado','Realizado','Rechazado','Cancelado'].includes(t.estado)"
+          (click)="cancelar(t)"
+        >
+          Cancelar
+        </button>
+        <button
+          mat-button
+          color="warn"
+          *ngIf="!['Aceptado','Realizado','Cancelado','Rechazado'].includes(t.estado)"
+          (click)="rechazar(t)"
+        >
+          Rechazar
+        </button>
+        <button
+          mat-button
+          *ngIf="t.estado === 'Aceptado'"
+          (click)="finalizar(t)"
+        >
+          Finalizar
+        </button>
+        <button
+          mat-button
+          *ngIf="t.comentario_paciente"
+          (click)="verResena(t)"
+        >
+          Ver Reseña
+        </button>
+      </td>
+    </ng-container>
 
-      <!-- Aceptar: solo si NO fue Realizado, Cancelado ni Rechazado -->
-      <button mat-button color="primary"
-              *ngIf="!['Realizado','Cancelado','Rechazado'].includes(t.estado)"
-              (click)="aceptar(t)">
-        Aceptar
-      </button>
-
-      <!-- Cancelar: solo si NO fue Aceptado, Realizado ni Rechazado -->
-      <button mat-button color="warn"
-              *ngIf="!['Aceptado','Realizado','Rechazado'].includes(t.estado)"
-              (click)="cancelar(t)">
-        Cancelar
-      </button>
-
-      <!-- Rechazar: solo si NO fue Aceptado, Realizado ni Cancelado -->
-      <button mat-button color="warn"
-              *ngIf="!['Aceptado','Realizado','Cancelado'].includes(t.estado)"
-              (click)="rechazar(t)">
-        Rechazar
-      </button>
-
-      <!-- Finalizar: solo si fue Aceptado -->
-      <button mat-button
-              *ngIf="t.estado === 'Aceptado'"
-              (click)="finalizar(t)">
-        Finalizar
-      </button>
-
-      <!-- Ver Reseña: solo si ya hay comentario del especialista -->
-      <button mat-button
-              *ngIf="t.comentario_especialista"
-              (click)="verResena(t)">
-        Ver Reseña
-      </button>
-
-    </td>
-  </ng-container>
 
 
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row        *matRowDef="let row; columns: displayedColumns;"></tr>
-</table>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row        *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+</ng-template>

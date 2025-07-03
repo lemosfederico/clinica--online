@@ -1,71 +1,69 @@
-<!-- src/app/turnos/solicitar-turno/solicitar-turno.component.html -->
+<!-- SolicitarTurno Component Template -->
 <div class="solicitar-turno-container">
-  <button mat-icon-button class="back-button" (click)="goBack()">
-    <mat-icon>arrow_back</mat-icon>
-  </button>
-  <h2 class="subtitle">Solicitar Turno</h2>
+  <button mat-icon-button class="back-button" (click)="goBack()"><mat-icon>arrow_back</mat-icon></button>
+  <h2>Solicitar Turno</h2>
 
-  <mat-card class="form-card">
-  <mat-card-title>Solicitar Turno</mat-card-title>
+  <!-- PASO 0: Paciente -->
+  <ng-container *ngIf="isAdmin && step===0">
+    <h3>Selecciona un Paciente</h3>
+    <div class="patient-grid">
+      <div *ngFor="let p of pacientes"
+           class="patient-card"
+           [class.selected]="p.user_id===selectedPacienteId"
+           (click)="selectPaciente(p)">
+        <img #imgRef [src]="p.image_urls?.[0]||'/assets/default-avatar.png'"
+             (error)="onImgError(imgRef, '/assets/default-avatar.png')"
+             alt="{{p.nombre}}" />
+        <div class="name">{{p.nombre}} {{p.apellido}}</div>
+      </div>
+    </div>
+  </ng-container>
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+  <!-- PASO 1: Especialidad -->
+  <ng-container *ngIf="step === 1">
+    <h3>1. Elige Especialidad</h3>
+    <div class="grid-buttons">
+      <button mat-button class="spec-button"
+              *ngFor="let s of specialidades"
+              (click)="onSelectEspecialidad(s)">
+        <img #specImg
+            [src]="getEspecialidadImage(s)"
+            (error)="onImgError(specImg, '/assets/default-spec.jpg')"
+            alt="{{ s }}" />
+      </button>
+    </div>
+  </ng-container>
 
-    <!-- Paciente (solo admin) -->
-    <mat-form-field *ngIf="isAdmin" appearance="outline" class="full-width">
-      <mat-label>Paciente*</mat-label>
-      <mat-select formControlName="paciente">
-        <mat-option *ngFor="let p of pacientes" [value]="p.user_id">
-          {{ p.nombre }} {{ p.apellido }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
 
-    <!-- Especialista -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Especialista*</mat-label>
-      <mat-select formControlName="especialista">
-        <mat-option *ngFor="let e of especialistas" [value]="e.user_id">
-          {{ e.nombre }} {{ e.apellido }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+  <!-- PASO 2: Profesional -->
+  <ng-container *ngIf="step===2">
+    <h3>2. Elige Profesional</h3>
+    <div class="grid-buttons">
+      <button mat-button *ngFor="let prof of especialistas" (click)="selectProfesional(prof)">
+        <img #profImg
+             [src]="prof.image_urls?.[0]||'/assets/default-avatar.jpg'"
+             (error)="onImgError(profImg,'/assets/default-avatar.jpg')"
+             alt="{{prof.nombre}}" />
+        <div class="label">{{prof.nombre}} {{prof.apellido}}</div>
+      </button>
+    </div>
+  </ng-container>
 
-    <!-- Especialidad -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Especialidad*</mat-label>
-      <mat-select formControlName="especialidad">
-        <mat-option *ngFor="let s of specialidades" [value]="s">
-          {{ s }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-  <!-- Fecha: sólo las fechas con horarios -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Fecha*</mat-label>
-      <mat-select formControlName="fecha">
-        <mat-option *ngFor="let f of availableDates" [value]="f.value">
-          {{ f.label }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <!-- Hora -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Hora*</mat-label>
-      <mat-select formControlName="hora" [disabled]="availableTimeSlots.length===0">
-        <mat-option *ngFor="let h of availableTimeSlots" [value]="h">
-          {{ h }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
+  <!-- PASO 3: Día y hora -->
+  <ng-container *ngIf="step===3">
+    <h3>3. Elige Día y Hora</h3>
+    <div class="grid-buttons">
+      <button mat-button class="slot-button"
+              *ngFor="let slot of slots"
+              [class.selected]="slot===selectedSlot"
+              (click)="selectSlot(slot)">
+        {{slot.display}}
+      </button>
+    </div>
     <div class="actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+      <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="!selectedSlot">
         Solicitar Turno
       </button>
     </div>
-  </form>
-  
-  </mat-card>
+  </ng-container>
 </div>

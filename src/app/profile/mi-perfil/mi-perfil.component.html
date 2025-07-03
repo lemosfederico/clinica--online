@@ -1,124 +1,73 @@
-<!-- src/app/mi-perfil/mi-perfil.component.html -->
 <button mat-icon-button class="back-button" (click)="goBack()">
   <mat-icon>arrow_back</mat-icon>
 </button>
 
-<ng-container *ngIf="!loading; else cargando">
-  <mat-card class="profile-card">
-    <mat-card-header>
-      <img
-        mat-card-avatar
-        [src]="avatarUrl"
-        alt="Avatar de {{ profile.nombre }}"
-      />
-      <mat-card-title>{{ profile.nombre }} {{ profile.apellido }}</mat-card-title>
-      <mat-card-subtitle>{{ profile.role | titlecase }}</mat-card-subtitle>
-    </mat-card-header>
-  </mat-card>
+<section *ngIf="profile.role==='especialista'">
+  <mat-card class="horarios-card">
+    <mat-card-title>Mis Horarios Semanales</mat-card-title>
 
-  <section *ngIf="profile.role==='especialista'" class="horarios-section">
-    <h2>Mis Horarios</h2>
-    <form [formGroup]="scheduleForm">
-      <div *ngFor="let spec of profile.specialties" class="spec-block">
-        <div class="spec-header">
-          <h3>{{ spec }}</h3>
-          <button mat-mini-fab color="primary" type="button" (click)="addEntry(spec)">
-            <mat-icon>add</mat-icon>
-          </button>
-        </div>
+    
+    <mat-card-content class="schedule-form">
 
-        <div formArrayName="entries">
-          <ng-container *ngFor="let grp of entries.controls; let i = index">
-            <ng-container *ngIf="grp.value.specialty === spec">
-              <div [formGroupName]="i" class="entry-row">
-                
-                <!-- Fecha -->
-                <mat-form-field appearance="outline">
-                  <mat-label>Fecha</mat-label>
-                  <input
-                    matInput
-                    type="date"
-                    formControlName="date"
-                    [min]="minDate"
-                    [max]="maxDate"
-                  />
-                  <mat-error *ngIf="grp.get('date')?.hasError('required')">
-                    La fecha es obligatoria.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('date')?.hasError('beforeMin')">
-                    No puedes elegir una fecha anterior a hoy.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('date')?.hasError('afterMax')">
-                    Solo puedes elegir hasta {{ maxDate }}.
-                  </mat-error>
-                </mat-form-field>
-
-                <!-- Desde -->
-                <mat-form-field appearance="outline">
-                  <mat-label>Desde</mat-label>
-                  <input
-                    matInput
-                    type="time"
-                    formControlName="start_time"
-                    [min]="minTime"
-                    [max]="maxTime"
-                  />
-                  <mat-error *ngIf="grp.get('start_time')?.hasError('required')">
-                    La hora de inicio es obligatoria.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('start_time')?.hasError('beforeMinTime')">
-                    Debe ser a partir de {{ minTime }}.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('start_time')?.hasError('afterMaxTime')">
-                    No puede superar {{ maxTime }}.
-                  </mat-error>
-                </mat-form-field>
-
-                <!-- Hasta -->
-                <mat-form-field appearance="outline">
-                  <mat-label>Hasta</mat-label>
-                  <input
-                    matInput
-                    type="time"
-                    formControlName="end_time"
-                    [min]="minTime"
-                    [max]="maxTime"
-                  />
-                  <mat-error *ngIf="grp.get('end_time')?.hasError('required')">
-                    La hora de fin es obligatoria.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('end_time')?.hasError('beforeMinTime')">
-                    Debe ser a partir de {{ minTime }}.
-                  </mat-error>
-                  <mat-error *ngIf="grp.get('end_time')?.hasError('afterMaxTime')">
-                    No puede superar {{ maxTime }}.
-                  </mat-error>
-                </mat-form-field>
-
-                <button mat-icon-button color="warn" type="button" (click)="removeEntry(i)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </ng-container>
-          </ng-container>
-        </div>
-      </div>
-
-      <div class="actions">
+      <!-- Selector de días -->
+      <div class="days-selector">
         <button
-          mat-raised-button
-          color="accent"
-          type="button"
-          (click)="saveSchedule()"
-          [disabled]="scheduleForm.invalid || entries.length===0"
+          mat-stroked-button
+          *ngFor="let d of days"
+          [color]="selectedDays.includes(d.value) ? 'primary' : undefined"
+          (click)="toggleDay(d.value)"
         >
-          Guardar Horarios
+          {{ d.label }}
         </button>
       </div>
-    </form>
-  </section>
-</ng-container>
 
-<ng-template #cargando>
-  <div class="loading">Cargando perfil…</div>
-</ng-template>
+      <!-- Pickers -->
+      <div class="time-pickers">
+        <mat-form-field appearance="fill">
+          <mat-label>Desde</mat-label>
+          <input matInput type="time" [(ngModel)]="from" [min]="minTime" [max]="maxTime"/>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Hasta</mat-label>
+          <input matInput type="time" [(ngModel)]="to" [min]="minTime" [max]="maxTime"/>
+        </mat-form-field>
+      </div>
+
+      <!-- Añadir o Actualizar -->
+      <button
+        mat-flat-button
+        color="accent"
+        (click)="addOrUpdateSchedule()"
+        [disabled]="!from || !to || !selectedDays.length"
+      >
+        <mat-icon>{{ editMode ? 'update' : 'add' }}</mat-icon>
+        {{ editMode ? 'Actualizar horario' : 'Añadir horario' }}
+      </button>
+
+      <!-- Tarjetas de franjas -->
+      <div class="schedule-grid">
+        <mat-card
+          class="schedule-card"
+          *ngFor="let s of weeklySchedules"
+          (click)="startEdit(s)"
+        >
+          <div>
+            <strong>{{ daysMap[s.dayOfWeek] }}</strong><br/>
+            {{ s.from }} – {{ s.to }}
+          </div>
+          <button mat-icon-button color="warn" (click)="removeSchedule(s.dayOfWeek); $event.stopPropagation()">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card>
+      </div>
+
+      <!-- Guardar -->
+      <div class="actions">
+        <button mat-raised-button color="primary" (click)="saveSchedules()" [disabled]="!weeklySchedules.length">
+          Guardar todos los horarios
+        </button>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+</section>

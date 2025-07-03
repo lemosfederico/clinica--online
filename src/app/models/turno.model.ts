@@ -1,17 +1,12 @@
 export interface Turno {
   id: number;
-  fecha: string;              // ISO date string, ej: '2025-06-20'
-  hora: string;               // ej: '14:30'
+  fecha: string;
+  hora: string;
   especialidad: string;
-  especialista: {
-  nombre: string;
-  apellido: string;
-  };
-  paciente?: {               // solo para especialista
-    nombre: string;
-    apellido: string;
-  };
-  estado: 'Pendiente' | 'Aceptado' | 'Realizado' | 'Cancelado' | 'Rechazado';
+  paciente_id: string;
+  especialista_id: string;
+  especialista?: { user_id: string; nombre: string; apellido: string; };
+  estado: string;
   comentario_especialista?: string;
   comentario_paciente?: string;
 }
